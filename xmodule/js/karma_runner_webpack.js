@@ -35,10 +35,22 @@ import StringUtils from 'edx-ui-toolkit/js/utils/string-utils';
 // but not explicitly imported
 import 'jquery.ui';
 
+// Problem Block (capa) source files
+import './src/xmodule.js';
+import './src/javascript_loader.js';
+import './src/collapsible.js';
+import './src/capa/display.js';
+import './src/capa/imageinput.js';
+import './src/capa/schematic.js';
+
 // These
 import '../assets/video/public/js/10_main.js';
 import './spec/helper.js';
 import './spec/video_helper.js';
+
+// Problem Block (capa) spec files
+import './spec/capa/display_spec.js';
+import './spec/capa/imageinput_spec.js';
 
 // These are the tests that will be run
 import './spec/video/async_process_spec.js';

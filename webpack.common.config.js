@@ -12,7 +12,9 @@ var builtinBlocksJS = require('./webpack.builtinblocks.config.js');
 
 var filesWithRequireJSBlocks = [
     path.resolve(__dirname, 'common/static/common/js/components/utils/view_utils.js'),
-    /xmodule\/js\/src/
+    path.resolve(__dirname, 'xmodule/js/src/poll/poll.js'),
+    path.resolve(__dirname, 'xmodule/js/src/poll/poll_main.js'),
+    path.resolve(__dirname, 'xmodule/js/src/video/08_video_auto_advance_control.js'),
 ];
 
 var defineHeader = /\(function ?\(((define|require|requirejs|\$)(, )?)+\) ?\{/;

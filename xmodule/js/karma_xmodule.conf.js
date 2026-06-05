@@ -74,12 +74,12 @@ var options = {
         {pattern: 'src/javascript_loader.js', included: true},
         {pattern: 'src/collapsible.js', included: true},
         // Load everything else
-        {pattern: 'src/**/!(video)/!(poll|time).js', included: true}
+        {pattern: 'src/**/!(video|capa)/!(poll|time).js', included: true}
     ],
 
     specFiles: [
         {pattern: 'spec/helper.js', included: true, ignoreCoverage: true}, // Helper which depends on source files.
-        {pattern: 'spec/**/!(video)/*.js', included: true},
+        {pattern: 'spec/**/!(video|capa)/*.js', included: true},
         {pattern: 'spec/!(time_spec|video_helper).js', included: true}
     ],
 

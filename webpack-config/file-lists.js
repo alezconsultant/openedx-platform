@@ -10,7 +10,9 @@ module.exports = {
         path.resolve(__dirname, '../common/static/common/js/components/views/paging_footer.js'),
         path.resolve(__dirname, '../cms/static/js/views/paging.js'),
         path.resolve(__dirname, '../common/static/common/js/components/utils/view_utils.js'),
-        /xmodule\/js\/src/,
+        path.resolve(__dirname, '../xmodule/js/src/poll/poll.js'),
+        path.resolve(__dirname, '../xmodule/js/src/poll/poll_main.js'),
+        path.resolve(__dirname, '../xmodule/js/src/video/08_video_auto_advance_control.js'),
         path.resolve(__dirname, '../openedx/features/course_bookmarks/static/course_bookmarks/js/views/bookmark_button.js')
     ],
 

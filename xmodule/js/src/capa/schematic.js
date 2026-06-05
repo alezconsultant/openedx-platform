@@ -1978,7 +1978,7 @@ function update_schematics() {
 }
 window.update_schematics = update_schematics;
 
-schematic = (function () {
+var schematic = (function () {
   var background_style = "rgb(220,220,220)";
   var element_style = "rgb(255,255,255)";
   var thumb_style = "rgb(128,128,128)";
