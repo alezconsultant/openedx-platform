@@ -22,7 +22,8 @@ import '../../common/static/js/test/i18n.js';
 import '../../common/static/common/js/vendor/hls.js';
 import '../assets/vertical/public/js/vertical_student_view.js';
 
-import '../../common/static/js/vendor/jasmine-imagediff.js';
+import imagediff from '../../common/static/js/vendor/jasmine-imagediff.js';
+window.imagediff = imagediff;
 import '../../common/static/common/js/spec_helpers/jasmine-waituntil.js';
 import '../../common/static/common/js/spec_helpers/jasmine-extensions.js';
 import '../../common/static/common/js/vendor/sinon.js';
