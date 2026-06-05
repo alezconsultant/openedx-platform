@@ -12,6 +12,9 @@ var builtinBlocksJS = require('./webpack.builtinblocks.config.js');
 
 var filesWithRequireJSBlocks = [
     path.resolve(__dirname, 'common/static/common/js/components/utils/view_utils.js'),
+    // Files in xmodule/js/src/ that still use RequireJS (AMD) patterns.
+    // New files added under xmodule/js/src/ should use ES6+ — do NOT add them here.
+    // To migrate a file off RequireJS, remove it from this list.
     path.resolve(__dirname, 'xmodule/js/src/poll/poll.js'),
     path.resolve(__dirname, 'xmodule/js/src/poll/poll_main.js'),
     path.resolve(__dirname, 'xmodule/js/src/video/08_video_auto_advance_control.js'),
