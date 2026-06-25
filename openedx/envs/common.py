@@ -2161,8 +2161,13 @@ LEARNER_ENGAGEMENT_PROMPT_FOR_NON_ACTIVE_CONTRACT = ''
 LEARNER_PROGRESS_PROMPT_FOR_ACTIVE_CONTRACT = ''
 LEARNER_PROGRESS_PROMPT_FOR_NON_ACTIVE_CONTRACT = ''
 
+########################## SWAGGER & OPEN API ###############################
+
 # How long to cache OpenAPI schemas and UI, in seconds.
 OPENAPI_CACHE_TIMEOUT = 60 * 60
+
+# Silences a Swagger (API docs) depr warning that doesn't apply to us.
+SWAGGER_USE_COMPAT_RENDERERS = False
 
 ################################### AWS ####################################
 
