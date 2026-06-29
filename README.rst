@@ -150,7 +150,7 @@ Set up CMS SSO (for Development)::
       --skip-authorization \
       --redirect-uris 'http://localhost:18010/complete/edx-oauth2/' \
       --scopes user_id  \
-      --client-id 'studio-sso-id' \
+      --client-id 'studio-sso-key' \
       --client-secret 'studio-sso-secret'
 
 Set up CMS SSO (for Production):
@@ -158,17 +158,17 @@ Set up CMS SSO (for Production):
 * Create the CMS user and the OAuth application::
 
     ./manage.py lms manage_user studio_worker <email@yourcompany.com> --unusable-password
-    ./manage.py lms create_dot_application studio-sso-id studio_worker \
+    ./manage.py lms create_dot_application studio-sso-key studio_worker \
         --grant-type authorization-code \
         --skip-authorization \
         --redirect-uris 'http://localhost:18010/complete/edx-oauth2/' \
         --scopes user_id
 
 * Log into Django admin (eg. http://localhost:18000/admin/oauth2_provider/application/),
-  click into the application you created above (``studio-sso-id``), and copy its "Client secret".
+  click into the application you created above (``studio-sso-key``), and copy its "Client secret".
 * In your private LMS_CFG yaml file or your private Django settings module:
 
- * Set ``SOCIAL_AUTH_EDX_OAUTH2_KEY`` to the client ID (``studio-sso-id``).
+ * Set ``SOCIAL_AUTH_EDX_OAUTH2_KEY`` to the client ID (``studio-sso-key``).
  * Set ``SOCIAL_AUTH_EDX_OAUTH2_SECRET`` to the client secret (which you copied).
 
 Run the Platform
@@ -229,6 +229,23 @@ running at the given ports.
    * - frontend-app-account
      - localhost:1997
      - ACCOUNT_MICROFRONTEND_URL
+
+Security Deployment Requirements
+********************************
+
+Some platform features require a **shared** Django cache backend (Redis or
+Memcached) to function correctly across multiple LMS nodes:
+
+* **LTI Provider** — OAuth nonce replay protection stores seen nonces in the
+  Django ``default`` cache. A per-process backend (e.g. ``LocMemCache``) will
+  not detect replays that arrive on a different node. See
+  `lms/djangoapps/lti_provider/README.rst`_ for details.
+
+Tutor-based deployments satisfy this requirement automatically. For bare-metal
+or custom deployments, verify that ``CACHES['default']`` points at a shared
+Redis or Memcached instance before enabling these features.
+
+.. _lms/djangoapps/lti_provider/README.rst: lms/djangoapps/lti_provider/README.rst
 
 License
 *******
