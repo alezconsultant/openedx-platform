@@ -76,8 +76,8 @@ dev-requirements: ## install development environment requirements
 base-requirements: ## install only production/runtime dependencies
 	uv sync --no-default-groups --frozen
 
-test-requirements: ## install only testing dependencies (used by CI and tox)
-	uv sync --only-group testing --frozen
+test-requirements: ## install production dependencies plus the testing group (used by CI and tox)
+	uv sync --no-default-groups --group testing --frozen
 
 requirements: dev-requirements ## install development environment requirements
 
