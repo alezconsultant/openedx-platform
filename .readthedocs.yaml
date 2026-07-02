@@ -7,16 +7,20 @@ build:
   jobs:
     post_create_environment:
       - pip install uv
-      # Export the `doc` dependency-group to a plain requirements.txt so it can be
-      # installed into RTD's own managed virtualenv below, rather than a separate
-      # uv-managed one -- this keeps RTD's normal sphinx auto-build detection intact.
-      # constraint-dependencies (e.g. setuptools<82, needed by fs/pyfilesystem2) are
-      # applied automatically as part of this export, so no separate pre-pinning step
-      # is needed the way requirements/pip-tools.txt used to provide.
-      - uv export --frozen --no-hashes --only-group doc -o doc-requirements.txt
+      # Export [project.dependencies] *and* the `doc` group together (--group, not
+      # --only-group -- the latter excludes [project.dependencies] entirely, which
+      # would leave Django/XBlock/etc. for `pip install -e .` below to resolve on
+      # its own, unconstrained by uv.lock's [tool.uv].constraint-dependencies, e.g.
+      # picking setuptools>=82 and breaking fs/pyfilesystem2's pkg_resources import)
+      # to a plain requirements.txt, installed into RTD's own managed virtualenv
+      # below rather than a separate uv-managed one -- this keeps RTD's normal
+      # sphinx auto-build detection intact.
+      - uv export --frozen --no-hashes --group doc --no-emit-project -o doc-requirements.txt
     post_install:
       - python -m pip install -r doc-requirements.txt
-      - python -m pip install -e .
+      # --no-deps: dependencies are already installed, pinned, from doc-requirements.txt
+      # above; this step only registers the local package itself for import.
+      - python -m pip install -e . --no-deps
 
 sphinx:
   configuration: docs/conf.py
