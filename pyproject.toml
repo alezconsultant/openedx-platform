@@ -263,6 +263,7 @@ constraint-dependencies = [
     "py2neo<2022",
     "pymongo<4.4.1",
     "social-auth-app-django<=5.4.1",
+    "social-auth-core<5.0.0",
     "lxml==5.3.2",
     "xmlsec==1.3.14",
     "django-debug-toolbar<6.0.0",
@@ -343,6 +344,15 @@ uv_constraints = [
     # We are pinning this until after all the smaller migrations get handled and then we can migrate this all at once.
     # Issue for unpinning: https://github.com/openedx/edx-platform/issues/37639
     "social-auth-app-django<=5.4.1",
+    # Date 2026-07-02
+    # social-auth-core 5.x changes the OAuth pipeline's post-login redirect
+    # behavior, breaking common/djangoapps/third_party_auth's integration
+    # tests (AzureAD/Google/LinkedIn/Twitter full-pipeline specs). Keep on
+    # the 4.x line until that's investigated and fixed separately -- see the
+    # social-auth-app-django pin above for a related, already-deferred
+    # migration in this dependency family.
+    # Issue for unpinning: https://github.com/openedx/edx-platform/issues/38841
+    "social-auth-core<5.0.0",
     # Date 2025-01-08
     # elasticsearch==7.13.x is downgrading urllib3 from 2.2.3 to 1.26.20
     # https://github.com/elastic/elasticsearch-py/blob/v7.13.4/setup.py#L42
