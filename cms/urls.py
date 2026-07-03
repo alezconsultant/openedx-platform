@@ -361,6 +361,12 @@ urlpatterns += [
     path('api/content_tagging/', include(('openedx.core.djangoapps.content_tagging.urls', 'content_tagging'))),
 ]
 
+# Enrollment API v2 — mounted here so the openedx-platform-sdk tag on these
+# views is picked up by the authoring-api schema endpoint below.
+urlpatterns += [
+    path('api/enrollment/v2/', include('openedx.core.djangoapps.enrollments.v2.urls', namespace='enrollment_v2')),
+]
+
 # Authoring-api specific API docs (using drf-spectacular and openapi-v3).
 # This is separate from and in addition to the full studio swagger documentation already existing at /api-docs.
 # Custom settings are provided in SPECTACULAR_SETTINGS as environment variables
