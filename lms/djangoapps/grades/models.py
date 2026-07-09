@@ -466,7 +466,10 @@ class PersistentSubsectionGrade(TimeStampedModel):
         Wrapper for objects.update_or_create.
         """
         cls._prepare_params(params)
-        VisibleBlocks.cached_get_or_create(params['user_id'], params['visible_blocks'])
+        # Capture the BlockRecordList before it's removed from params below, so the
+        # event can be emitted without extra queries on grade.visible_blocks
+        visible_blocks = params['visible_blocks']
+        VisibleBlocks.cached_get_or_create(params['user_id'], visible_blocks)
         cls._prepare_params_visible_blocks_id(params)
 
         # TODO: do we NEED to pop these?
@@ -487,7 +490,7 @@ class PersistentSubsectionGrade(TimeStampedModel):
             grade.save()
 
         cls._emit_grade_calculated_event(grade)
-        cls._emit_openedx_persistent_subsection_grade_changed_event(grade)
+        cls._emit_openedx_persistent_subsection_grade_changed_event(grade, visible_blocks)
         return grade
 
     @classmethod
@@ -501,16 +504,17 @@ class PersistentSubsectionGrade(TimeStampedModel):
         PersistentSubsectionGradeOverride.prefetch(user_id, course_key)
 
         list(map(cls._prepare_params, grade_params_iter))
-        VisibleBlocks.bulk_get_or_create(
-            user_id, course_key, [params['visible_blocks'] for params in grade_params_iter]
-        )
+        # Capture the BlockRecordLists (in order) before they're removed from params below,
+        # so events can be emitted without extra queries on grade.visible_blocks
+        visible_blocks_list = [params['visible_blocks'] for params in grade_params_iter]
+        VisibleBlocks.bulk_get_or_create(user_id, course_key, visible_blocks_list)
         list(map(cls._prepare_params_visible_blocks_id, grade_params_iter))
 
         grades = [PersistentSubsectionGrade(**params) for params in grade_params_iter]
         grades = cls.objects.bulk_create(grades)
-        for grade in grades:
+        for grade, visible_blocks in zip(grades, visible_blocks_list, strict=True):
             cls._emit_grade_calculated_event(grade)
-            cls._emit_openedx_persistent_subsection_grade_changed_event(grade)
+            cls._emit_openedx_persistent_subsection_grade_changed_event(grade, visible_blocks)
         return grades
 
     @classmethod
@@ -541,7 +545,7 @@ class PersistentSubsectionGrade(TimeStampedModel):
         events.subsection_grade_calculated(grade)
 
     @staticmethod
-    def _emit_openedx_persistent_subsection_grade_changed_event(grade):
+    def _emit_openedx_persistent_subsection_grade_changed_event(grade, visible_blocks):
         """
         When called emits an event when a persistent subsection grade is created or updated.
         """
@@ -557,7 +561,7 @@ class PersistentSubsectionGrade(TimeStampedModel):
                 exc_info=True,
             )
 
-        visible_blocks = [
+        xblocks_scoring_data = [
             XBlockWithScoringData(
                 usage_key=block.locator,
                 block_type=block.locator.block_type,
@@ -565,7 +569,7 @@ class PersistentSubsectionGrade(TimeStampedModel):
                 raw_possible=block.raw_possible,
                 weight=block.weight,
             )
-            for block in grade.visible_blocks.blocks
+            for block in visible_blocks
         ]
 
         PERSISTENT_SUBSECTION_GRADE_CHANGED.send_event(
@@ -582,7 +586,7 @@ class PersistentSubsectionGrade(TimeStampedModel):
                 weighted_total_earned=grade.earned_all,
                 weighted_total_possible=grade.possible_all,
                 first_attempted=grade.first_attempted,
-                visible_blocks=visible_blocks,
+                visible_blocks=xblocks_scoring_data,
                 visible_blocks_hash=str(grade.visible_blocks_id),
             )
         )
