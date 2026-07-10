@@ -461,7 +461,7 @@ class PersistentSubsectionGrade(TimeStampedModel):
             )
 
     @classmethod
-    def update_or_create_grade(cls, **params):
+    def update_or_create_grade(cls, grading_policy_hash=None, **params):
         """
         Wrapper for objects.update_or_create.
         """
@@ -490,11 +490,11 @@ class PersistentSubsectionGrade(TimeStampedModel):
             grade.save()
 
         cls._emit_grade_calculated_event(grade)
-        cls._emit_openedx_persistent_subsection_grade_changed_event(grade, visible_blocks)
+        cls._emit_openedx_persistent_subsection_grade_changed_event(grade, visible_blocks, grading_policy_hash)
         return grade
 
     @classmethod
-    def bulk_create_grades(cls, grade_params_iter, user_id, course_key):
+    def bulk_create_grades(cls, grade_params_iter, user_id, course_key, grading_policy_hash=None):
         """
         Bulk creation of grades.
         """
@@ -514,7 +514,7 @@ class PersistentSubsectionGrade(TimeStampedModel):
         grades = cls.objects.bulk_create(grades)
         for grade, visible_blocks in zip(grades, visible_blocks_list, strict=True):
             cls._emit_grade_calculated_event(grade)
-            cls._emit_openedx_persistent_subsection_grade_changed_event(grade, visible_blocks)
+            cls._emit_openedx_persistent_subsection_grade_changed_event(grade, visible_blocks, grading_policy_hash)
         return grades
 
     @classmethod
@@ -545,21 +545,26 @@ class PersistentSubsectionGrade(TimeStampedModel):
         events.subsection_grade_calculated(grade)
 
     @staticmethod
-    def _emit_openedx_persistent_subsection_grade_changed_event(grade, visible_blocks):
+    def _emit_openedx_persistent_subsection_grade_changed_event(grade, visible_blocks, grading_policy_hash=None):
         """
         When called emits an event when a persistent subsection grade is created or updated.
+
+        ``grading_policy_hash`` should be supplied by callers that already have the course's
+        block structure loaded, so it can be reused instead of loading the course from the
+        modulestore (an extra query per event).  When not provided, it is computed here.
         """
         # .. event_implemented_name: PERSISTENT_SUBSECTION_GRADE_CHANGED
         # .. event_type: org.openedx.learning.course.persistent_subsection_grade.changed.v1
-        try:
-            grading_policy_hash = GradesCourseData(user=None, course_key=grade.course_id).grading_policy_hash
-        except Exception:  # pylint: disable=broad-except
-            grading_policy_hash = ""
-            log.debug(
-                "Unable to compute grading_policy_hash for course %s",
-                grade.course_id,
-                exc_info=True,
-            )
+        if grading_policy_hash is None:
+            try:
+                grading_policy_hash = GradesCourseData(user=None, course_key=grade.course_id).grading_policy_hash
+            except Exception:  # pylint: disable=broad-except
+                grading_policy_hash = ""
+                log.debug(
+                    "Unable to compute grading_policy_hash for course %s",
+                    grade.course_id,
+                    exc_info=True,
+                )
 
         xblocks_scoring_data = [
             XBlockWithScoringData(
