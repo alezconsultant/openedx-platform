@@ -637,12 +637,12 @@ googleapis-common-protos==1.75.0
     # via
     #   google-api-core
     #   grpcio-status
-grpcio==1.81.1
+grpcio==1.81.1 ; platform_python_implementation != 'PyPy'
     # via
     #   google-api-core
     #   google-cloud-firestore
     #   grpcio-status
-grpcio-status==1.81.1
+grpcio-status==1.81.1 ; platform_python_implementation != 'PyPy'
     # via google-api-core
 gunicorn==26.0.0
     # via openedx-platform
