@@ -39,4 +39,11 @@ package = false
 constraint-dependencies = [
     "Django<6.0",
     "elasticsearch<7.14.0",
+    "lxml==5.3.2",
+]
+[tool.edx_lint]
+# Adding pin to avoid any major upgrade -- see the root pyproject.toml's
+# [tool.edx_lint].uv_constraints for the full rationale.
+uv_constraints = [
+    "lxml==5.3.2",
 ]

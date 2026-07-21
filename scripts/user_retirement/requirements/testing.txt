@@ -82,7 +82,7 @@ jmespath==1.1.0
     # via
     #   boto3
     #   botocore
-lxml==6.1.1
+lxml==5.3.2
     # via zeep
 markupsafe==3.0.3
     # via werkzeug
