@@ -597,6 +597,60 @@ norecursedirs = ". .* *.egg build conf dist node_modules test_root cms/envs lms/
 python_classes = []
 python_files = ["tests.py", "test_*.py", "tests_*.py", "*_tests.py", "__init__.py"]
 
+[tool.coverage.run]
+branch = true
+data_file = "reports/.coverage"
+source = [
+    "cms",
+    "common/djangoapps",
+    "lms",
+    "openedx",
+    "pavelib",
+    "scripts",
+    "xmodule",
+]
+omit = [
+    "cms/envs/*",
+    "cms/manage.py",
+    "cms/djangoapps/contentstore/views/dev.py",
+    "cms/djangoapps/*/migrations/*",
+    "cms/djangoapps/*/features/*",
+    "cms/lib/*/migrations/*",
+    "lms/debug/*",
+    "lms/envs/*",
+    "lms/djangoapps/*/migrations/*",
+    "lms/djangoapps/*/features/*",
+    "common/djangoapps/*/migrations/*",
+    "openedx/core/djangoapps/*/migrations/*",
+    "openedx/core/djangoapps/debug/*",
+    "openedx/envs/*",
+    "openedx/features/*/migrations/*",
+]
+concurrency = ["multiprocessing"]
+parallel = true
+relative_files = true
+
+[tool.coverage.report]
+ignore_errors = true
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+]
+
+[tool.coverage.html]
+title = "edx-platform Python Test Coverage Report"
+directory = "reports/cover"
+
+[tool.coverage.xml]
+output = "reports/coverage.xml"
+
+[tool.coverage.paths]
+jenkins_source = [
+    "/home/jenkins/workspace/$JOB_NAME",
+    "/home/jenkins/workspace/$SUBSET_JOB",
+    "/home/jenkins/edx-platform",
+]
+
 [tool.ruff]
 line-length = 120
 exclude = [
