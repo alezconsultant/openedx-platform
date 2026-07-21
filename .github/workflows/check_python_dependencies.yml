@@ -4,7 +4,8 @@
 # repo switched to pyproject.toml + uv (see
 # https://github.com/openedx/public-engineering/issues/543). Re-enable once
 # edx-repo-tools can scan pyproject.toml/uv.lock instead — tracked at
-# https://github.com/openedx/repo-tools/issues/725.
+# https://github.com/openedx/repo-tools/issues/725, fix proposed in
+# https://github.com/openedx/repo-tools/pull/735.
 name: Check Python Dependencies
 
 on:
