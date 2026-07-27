@@ -56,7 +56,6 @@ jobs:
       - name: Install Required Python Dependencies
         run: |
           make base-requirements
-          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
 
       - name: Install npm
         run: npm ci  
