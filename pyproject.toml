@@ -254,7 +254,7 @@ constraint-dependencies = [
     "celery>=5.2.2,!=5.6.1,<6.0.0",
     "django-oauth-toolkit==1.7.1",
     "django-stubs<6",
-    "edx-enterprise==8.3.0",
+    "edx-enterprise==8.7.0",
     "libsass==0.10.0",
     "numpy<2.0.0",
     "openedx-core<2",
@@ -300,7 +300,7 @@ uv_constraints = [
     # The team that owns this package will manually bump this package rather than having it pulled in automatically.
     # This is to allow them to better control its deployment and to do it in a process that works better
     # for them.
-    "edx-enterprise==8.3.0",
+    "edx-enterprise==8.7.0",
     # Date: 2023-07-26
     # Our legacy Sass code is incompatible with anything except this ancient libsass version.
     # Here is a ticket to upgrade, but it's of debatable importance given that we are rapidly moving
