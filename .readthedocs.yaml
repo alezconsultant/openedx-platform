@@ -7,7 +7,7 @@ build:
   jobs:
     post_create_environment:
       - pip install uv
-      # Export [project.dependencies] *and* the `doc` group together (--group, not
+      # Export [project.dependencies] *and* the `docs` group together (--group, not
       # --only-group -- the latter excludes [project.dependencies] entirely, which
       # would leave Django/XBlock/etc. for `pip install -e .` below to resolve on
       # its own, unconstrained by uv.lock's [tool.uv].constraint-dependencies, e.g.
@@ -15,7 +15,7 @@ build:
       # to a plain requirements.txt, installed into RTD's own managed virtualenv
       # below rather than a separate uv-managed one -- this keeps RTD's normal
       # sphinx auto-build detection intact.
-      - uv export --frozen --no-hashes --group doc --no-emit-project -o doc-requirements.txt
+      - uv export --frozen --no-hashes --group docs --no-emit-project -o doc-requirements.txt
     post_install:
       - python -m pip install -r doc-requirements.txt
       # --no-deps: dependencies are already installed, pinned, from doc-requirements.txt

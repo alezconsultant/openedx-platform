@@ -142,6 +142,22 @@ dependencies = [
     "unicodeit", # Converts mathjax equation to plain text by using unicode symbols
     "psycopg2-binary",
     "openedx-authz", # Authorization Framework for the Open edX Ecosystem
+]
+
+[project.optional-dependencies]
+openstack = [
+    "django-storage-swift==1.2.19",
+]
+[dependency-groups]
+coverage = [
+    "coverage", # Code coverage testing for Python
+    "diff-cover", # Automatically find diff lines that need test coverage
+]
+bundled = [
+    # Dependencies that are normally "bundled" with the platform, but are not core to
+    # the platform's functionality. They are still installed by default (this group is
+    # included from `testing`, and explicitly synced in `base-requirements`), but they
+    # should not be required for the platform to run nor for the test suite to pass.
     "edx-i18n-tools>=0.4.6", # i18n_tool is needed at build time for pulling translations; Commands for developers and translators to extract, compile and validate translations
     "django-ses", # Django email backend for Amazon’s Simple Email Service
     "mailsnake", # MailChimp API; used for two management commands in the "mailing" djangoapp
@@ -158,18 +174,9 @@ dependencies = [
     "xblocks-contrib", # Package having multiple core XBlocks, https://github.com/openedx/xblocks-contrib?tab=readme-ov-file#xblocks-being-moved-here
     "enterprise-integrated-channels", # Integrated Channels to transmit content metadata and learner data.
 ]
-
-[project.optional-dependencies]
-openstack = [
-    "django-storage-swift==1.2.19",
-]
-[dependency-groups]
-coverage = [
-    "coverage", # Code coverage testing for Python
-    "diff-cover", # Automatically find diff lines that need test coverage
-]
 testing = [
     {include-group = "coverage"},
+    {include-group = "bundled"},
     "beautifulsoup4", # Library for extracting data from HTML and XML files
     "code-annotations", # Perform code annotation checking, such as for PII annotations
     "cssselect", # Used to extract HTML fragments via CSS selectors in 2 test cases and pyquery
@@ -194,13 +201,12 @@ testing = [
     "pytest-xdist[psutil]", # Parallel execution of tests on multiple CPU cores or hosts
     "singledispatch", # Backport of functools.singledispatch from Python 3.4+, used in tests of XBlock rendering
     "testfixtures", # Provides a LogCapture utility used by several tests
-    "tox", # virtualenv management for tests
     "unidiff", # Required by coverage_pytest_plugin
     "pylint-pytest", # A Pylint plugin to suppress pytest-related false positives.
     "pact-python", # Library for contract testing
     "py", # Needed for pytest configurations, was previously been fetched through tox
 ]
-doc = [
+docs = [
     "code-annotations", # provides annotations for certain documentation
     "sphinx-book-theme", # Common theme for all Open edX projects
     "gitpython", # fetch git repo information
@@ -218,7 +224,7 @@ assets = [
 ]
 development = [
     {include-group = "testing"},
-    {include-group = "doc"},
+    {include-group = "docs"},
     {include-group = "assets"},
     "django-debug-toolbar", # A set of panels that display debug information about the current request/response
     "django-stubs[compatible-mypy]", # Typing stubs for Django, so it works with mypy

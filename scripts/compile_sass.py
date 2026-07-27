@@ -11,9 +11,11 @@ Get more details:
      npm run compile-sass -- --help
      npm run compile-sass -- --dry
 
-Setup (Tutor and Devstack will do this for you):
+Setup (Tutor and Devstack will do this for you, generally as part of a fuller
+environment sync rather than standalone -- this is the minimal command needed
+to run *only* this script):
 
-    uv sync --group assets
+    uv sync --no-default-groups --only-group assets --no-install-project
 
 Usage:
 
