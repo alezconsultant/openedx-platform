@@ -479,7 +479,7 @@ edx-drf-extensions==10.6.0
     #   openedx-authz
     #   openedx-core
     #   openedx-platform
-edx-enterprise==8.7.0
+edx-enterprise==8.7.2
     # via openedx-platform
 edx-event-bus-kafka==6.1.0
     # via openedx-platform
@@ -569,7 +569,7 @@ enmerkar==0.7.1
     # via enmerkar-underscore
 enmerkar-underscore==2.4.0
     # via openedx-platform
-enterprise-integrated-channels==0.1.61
+enterprise-integrated-channels==0.1.65
 event-tracking==4.0.2
     # via
     #   edx-completion

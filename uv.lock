@@ -15,7 +15,7 @@ constraints = [
     { name = "django-debug-toolbar", specifier = "<6.0.0" },
     { name = "django-oauth-toolkit", specifier = "==1.7.1" },
     { name = "django-stubs", specifier = "<6" },
-    { name = "edx-enterprise", specifier = "==8.7.0" },
+    { name = "edx-enterprise", specifier = "==8.7.2" },
     { name = "elasticsearch", specifier = "==7.9.1" },
     { name = "libsass", specifier = "==0.10.0" },
     { name = "lxml", specifier = "==5.3.2" },
@@ -1826,7 +1826,7 @@ wheels = [
 
 [[package]]
 name = "edx-enterprise"
-version = "8.7.0"
+version = "8.7.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "bleach" },
@@ -1877,9 +1877,9 @@ dependencies = [
     { name = "tincan" },
     { name = "unicodecsv" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d2/24/a11ce1fd275c542e2525031729c89906941ca58ea5707cb94618c1263952/edx_enterprise-8.7.0.tar.gz", hash = "sha256:82890ff75791cbda50f3682d6c717f85501818b953c434f5efdb9d1f623e4e67", size = 5151883, upload-time = "2026-07-16T15:46:23.56Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/9b/50/9244dc8cdc04388ebd6e1033bee468b5145b9c2215145477557bacfd5504/edx_enterprise-8.7.2.tar.gz", hash = "sha256:d1513a98e5180c56154797b131c290519e24c2e823fb6faf54c10b1efcbb3149", size = 5153562, upload-time = "2026-07-27T16:03:32.398Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/2b/8b/7d1f5cafb40dea4b24cd095f637fb58d221e6ee0deaa4cd0286b2fb7230a/edx_enterprise-8.7.0-py3-none-any.whl", hash = "sha256:e727e7f2d3bb2889e072f92bd946ffc43051293aa5c8d77bb6d8767d5612a183", size = 5546088, upload-time = "2026-07-16T15:46:20.121Z" },
+    { url = "https://files.pythonhosted.org/packages/34/7d/f42c1fc3c3ab8549995a95e92dc80e67eec16089019fc9e972a08e50c41f/edx_enterprise-8.7.2-py3-none-any.whl", hash = "sha256:aa27043d4bea303c943e9d317880b6567b4a6a17b57c85b60374bf0434b50fdd", size = 5547513, upload-time = "2026-07-27T16:03:28.802Z" },
 ]
 
 [[package]]
@@ -2225,7 +2225,7 @@ wheels = [
 
 [[package]]
 name = "enterprise-integrated-channels"
-version = "0.1.61"
+version = "0.1.65"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "celery" },
@@ -2250,9 +2250,9 @@ dependencies = [
     { name = "snowflake-connector-python" },
     { name = "unicodecsv" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/39/ea/7656ed076a182b2832f3466563c2e1484d9ffdf58a3a8c02ecd3c46bfe46/enterprise_integrated_channels-0.1.61.tar.gz", hash = "sha256:27713c2752d493969275566f004fa13f7cffed43dd36e7beba48c395d91fb80a", size = 247788, upload-time = "2026-06-25T14:24:30.693Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ab/30/7b26458629ba908a4fe680cb0637bdade6594b6dc34e445cce78346cefa7/enterprise_integrated_channels-0.1.65.tar.gz", hash = "sha256:c570d648e8e547bb48d4babe035fea02ced4da53c8fd816a8ae9a0334434b9b7", size = 248272, upload-time = "2026-07-27T17:51:43.926Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/5e/3d/788a6a861526a4f51f62160152281c0e79ded28eaec5bc464fee18cd0850/enterprise_integrated_channels-0.1.61-py2.py3-none-any.whl", hash = "sha256:2161b1f12723e55ca44407dcab12ac6dfe689c1937927b926bab53531036b678", size = 334458, upload-time = "2026-06-25T14:24:28.815Z" },
+    { url = "https://files.pythonhosted.org/packages/c9/cc/163e2e671cb99068f6585efc2cb50b991e4650cc4abccc41489b617fb6b3/enterprise_integrated_channels-0.1.65-py2.py3-none-any.whl", hash = "sha256:837f188e19008e9ef65e90bf8b0b3953944591e7d6a1fe72a5320ce4ffed70c2", size = 334816, upload-time = "2026-07-27T17:51:42.361Z" },
 ]
 
 [[package]]
