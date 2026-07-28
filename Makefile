@@ -68,10 +68,10 @@ local-requirements: ## no-op; `uv sync` (used by the targets below) already inst
 	@true
 
 dev-requirements: ## install development environment requirements
-	uv sync --group dev --frozen
+	uv sync --group default --frozen
 
 base-requirements: ## install only production/runtime dependencies
-	uv sync --no-default-groups --group bundled --frozen
+	uv sync --no-default-groups --group non-core --frozen
 
 test-requirements: ## install production dependencies plus the testing group (used by CI and tox)
 	uv sync --no-default-groups --group testing --frozen
@@ -97,11 +97,11 @@ compile-requirements: ## Regenerate uv.lock for the root project and all uv sub-
 	@mkdir -p requirements/edx
 	@{ \
 		echo "# GENERATED FILE, DO NOT EDIT DIRECTLY."; \
-		echo "# Compatibility export of [project.dependencies] plus the 'bundled' group"; \
+		echo "# Compatibility export of [project.dependencies] plus the 'non-core' group"; \
 		echo "# (optional third-party add-ons installed by default) for tools that still"; \
 		echo "# 'pip install -r requirements/edx/base.txt' directly instead of using uv."; \
-		echo "# Source of truth: [project.dependencies] / [dependency-groups].bundled in pyproject.toml / uv.lock."; \
-		uv export --frozen --no-hashes --no-default-groups --group bundled --no-emit-project; \
+		echo "# Source of truth: [project.dependencies] / [dependency-groups].non-core in pyproject.toml / uv.lock."; \
+		uv export --frozen --no-hashes --no-default-groups --group non-core --no-emit-project; \
 	} > requirements/edx/base.txt
 	@{ \
 		echo "# GENERATED FILE, DO NOT EDIT DIRECTLY."; \
@@ -112,10 +112,10 @@ compile-requirements: ## Regenerate uv.lock for the root project and all uv sub-
 	} > requirements/edx/assets.txt
 	@{ \
 		echo "# GENERATED FILE, DO NOT EDIT DIRECTLY."; \
-		echo "# Compatibility export of the 'dev' dependency-group for tools that still"; \
+		echo "# Compatibility export of the 'default' dependency-group for tools that still"; \
 		echo "# 'pip install -r requirements/edx/development.txt' directly instead of using uv."; \
-		echo "# Source of truth: [dependency-groups].dev in pyproject.toml / uv.lock."; \
-		uv export --frozen --no-hashes --group dev --no-emit-project; \
+		echo "# Source of truth: [dependency-groups].default in pyproject.toml / uv.lock."; \
+		uv export --frozen --no-hashes --group default --no-emit-project; \
 	} > requirements/edx/development.txt
 
 	@# requirements/edx-sandbox and scripts/xblock: single compat export, no dependency-groups.

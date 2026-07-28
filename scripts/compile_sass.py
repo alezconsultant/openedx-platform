@@ -17,6 +17,13 @@ to run *only* this script):
 
     uv sync --no-default-groups --only-group assets --no-install-project
 
+Verified: with only that minimal 4-package environment (click, libsass, nodeenv,
+six) synced, libsass's `_sass.compile_filename` binding actually compiles Sass to
+CSS correctly -- this isn't just a package-count check. (edx-bootstrap and other
+Sass partials come from `node_modules` via npm, a separate toolchain untouched by
+this dependency-group split; Tutor/Devstack always run `npm install` alongside
+this sync.)
+
 Usage:
 
      npm run compile-sass             # prod, no args

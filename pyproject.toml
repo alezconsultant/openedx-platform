@@ -153,8 +153,8 @@ coverage = [
     "coverage", # Code coverage testing for Python
     "diff-cover", # Automatically find diff lines that need test coverage
 ]
-bundled = [
-    # Dependencies that are normally "bundled" with the platform, but are not core to
+non-core = [
+    # Dependencies that are normally bundled with the platform, but are not core to
     # the platform's functionality. They are still installed by default (this group is
     # included from `testing`, and explicitly synced in `base-requirements`), but they
     # should not be required for the platform to run nor for the test suite to pass.
@@ -176,7 +176,7 @@ bundled = [
 ]
 testing = [
     {include-group = "coverage"},
-    {include-group = "bundled"},
+    {include-group = "non-core"},
     "beautifulsoup4", # Library for extracting data from HTML and XML files
     "code-annotations", # Perform code annotation checking, such as for PII annotations
     "cssselect", # Used to extract HTML fragments via CSS selectors in 2 test cases and pyquery
@@ -242,12 +242,17 @@ ci = [
     "tox",
     "tox-uv",
 ]
-dev = [
+# The group installed by a bare `uv sync` with no --group/--only-group flags (see
+# `default-groups` below). Named `default` (rather than `dev`, uv's own built-in
+# default group name) to avoid confusion with the very similarly-named `development`
+# group that it wraps.
+default = [
     {include-group = "development"},
     {include-group = "ci"},
 ]
 
 [tool.uv]
+default-groups = ["default"]
 
 #  DO NOT EDIT constraint-dependencies DIRECTLY.
 #  This list is managed by `edx_lint write_uv_constraints`
