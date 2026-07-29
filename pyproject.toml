@@ -153,7 +153,7 @@ coverage = [
     "coverage", # Code coverage testing for Python
     "diff-cover", # Automatically find diff lines that need test coverage
 ]
-non-core = [
+bundled = [
     # Dependencies that are normally bundled with the platform, but are not core to
     # the platform's functionality. They are still installed by default (this group is
     # included from `testing`, and explicitly synced in `base-requirements`), but they
@@ -176,7 +176,7 @@ non-core = [
 ]
 testing = [
     {include-group = "coverage"},
-    {include-group = "non-core"},
+    {include-group = "bundled"},
     "beautifulsoup4", # Library for extracting data from HTML and XML files
     "code-annotations", # Perform code annotation checking, such as for PII annotations
     "cssselect", # Used to extract HTML fragments via CSS selectors in 2 test cases and pyquery

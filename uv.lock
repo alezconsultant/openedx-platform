@@ -4295,6 +4295,23 @@ assets = [
     { name = "libsass" },
     { name = "nodeenv" },
 ]
+bundled = [
+    { name = "crowdsourcehinter-xblock" },
+    { name = "django-ses" },
+    { name = "done-xblock" },
+    { name = "edx-i18n-tools" },
+    { name = "edx-sga" },
+    { name = "enterprise-integrated-channels" },
+    { name = "mailsnake" },
+    { name = "optimizely-sdk" },
+    { name = "ora2" },
+    { name = "recommender-xblock" },
+    { name = "staff-graded-xblock" },
+    { name = "xblock-drag-and-drop-v2" },
+    { name = "xblock-google-drive" },
+    { name = "xblock-poll" },
+    { name = "xblocks-contrib" },
+]
 ci = [
     { name = "tox" },
     { name = "tox-uv" },
@@ -4447,23 +4464,6 @@ docs = [
     { name = "sphinx-reredirects" },
     { name = "sphinxcontrib-openapi" },
     { name = "sphinxext-rediraffe" },
-]
-non-core = [
-    { name = "crowdsourcehinter-xblock" },
-    { name = "django-ses" },
-    { name = "done-xblock" },
-    { name = "edx-i18n-tools" },
-    { name = "edx-sga" },
-    { name = "enterprise-integrated-channels" },
-    { name = "mailsnake" },
-    { name = "optimizely-sdk" },
-    { name = "ora2" },
-    { name = "recommender-xblock" },
-    { name = "staff-graded-xblock" },
-    { name = "xblock-drag-and-drop-v2" },
-    { name = "xblock-google-drive" },
-    { name = "xblock-poll" },
-    { name = "xblocks-contrib" },
 ]
 semgrep = [
     { name = "semgrep" },
@@ -4663,6 +4663,23 @@ assets = [
     { name = "libsass" },
     { name = "nodeenv" },
 ]
+bundled = [
+    { name = "crowdsourcehinter-xblock" },
+    { name = "django-ses" },
+    { name = "done-xblock" },
+    { name = "edx-i18n-tools", specifier = ">=0.4.6" },
+    { name = "edx-sga" },
+    { name = "enterprise-integrated-channels" },
+    { name = "mailsnake" },
+    { name = "optimizely-sdk" },
+    { name = "ora2", specifier = ">=4.5.0" },
+    { name = "recommender-xblock" },
+    { name = "staff-graded-xblock" },
+    { name = "xblock-drag-and-drop-v2" },
+    { name = "xblock-google-drive" },
+    { name = "xblock-poll" },
+    { name = "xblocks-contrib" },
+]
 ci = [
     { name = "tox" },
     { name = "tox-uv" },
@@ -4815,23 +4832,6 @@ docs = [
     { name = "sphinx-reredirects" },
     { name = "sphinxcontrib-openapi" },
     { name = "sphinxext-rediraffe" },
-]
-non-core = [
-    { name = "crowdsourcehinter-xblock" },
-    { name = "django-ses" },
-    { name = "done-xblock" },
-    { name = "edx-i18n-tools", specifier = ">=0.4.6" },
-    { name = "edx-sga" },
-    { name = "enterprise-integrated-channels" },
-    { name = "mailsnake" },
-    { name = "optimizely-sdk" },
-    { name = "ora2", specifier = ">=4.5.0" },
-    { name = "recommender-xblock" },
-    { name = "staff-graded-xblock" },
-    { name = "xblock-drag-and-drop-v2" },
-    { name = "xblock-google-drive" },
-    { name = "xblock-poll" },
-    { name = "xblocks-contrib" },
 ]
 semgrep = [{ name = "semgrep" }]
 testing = [
