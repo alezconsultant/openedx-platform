@@ -23,7 +23,8 @@ are maintained independently from the root ones.
 
 Regenerate ``uv.lock`` (and the ``base.txt`` compatibility export below) by
 running ``make compile-requirements`` or ``make upgrade`` from the repo root
--- see the root ``Makefile``'s ``UV_SUBPROJECTS`` loop.
+-- see the ``requirements/edx-sandbox`` loop in the root ``Makefile``'s
+``compile-requirements`` target.
 
 base.txt
 ========

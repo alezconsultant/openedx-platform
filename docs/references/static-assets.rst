@@ -72,7 +72,7 @@ Building frontend assets requires an active Node and Python environment with
 dependencies installed::
 
   npm clean-install
-  uv sync --group assets
+  uv sync --no-default-groups --group assets
 
 
 Once your environment variables are set and build dependencies are installed,
@@ -139,7 +139,7 @@ skip this section.
 First, ensure you have a Python enironment with all edx-platform dependencies
 installed::
 
-  uv sync
+  uv sync --no-default-groups --group bundled --group assets
 
 Next, download localized versions of edx-platform assets. Under the hood, this
 command uses the `Open edX Atlas`_ tool, which manages aggregated translations
