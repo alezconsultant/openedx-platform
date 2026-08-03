@@ -64,7 +64,7 @@ pull_translations: clean_translations  ## pull translations via atlas
 detect_changed_source_translations: ## check if translation files are up-to-date
 	i18n_tool changed
 
-local-requirements: ## no-op; `uv sync` (used by the targets below) already installs -e . itself
+local-requirements: ## no-op; kept for backwards compatibility -- uv sync handles this now
 	@true
 
 dev-requirements: ## install development environment requirements

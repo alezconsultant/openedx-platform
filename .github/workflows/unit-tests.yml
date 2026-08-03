@@ -321,9 +321,15 @@ jobs:
           merge-multiple: true
           path: reports
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
       - name: Install Python dependencies
         run: |
-          pip install coverage diff-cover
+          uv sync --no-default-groups --only-group coverage --no-install-project --frozen
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
 
       - name: Run coverage
         run: |
