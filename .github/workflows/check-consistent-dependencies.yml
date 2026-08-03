@@ -49,11 +49,6 @@ jobs:
             echo "RELEVANT=true" >> "$GITHUB_ENV"
           fi
 
-      - uses: actions/setup-python@v6
-        if: ${{ env.RELEVANT == 'true' }}
-        with:
-          python-version: '3.12'
-
       - name: install system requirements
         if: ${{ env.RELEVANT == 'true' }}
         run: |
@@ -61,9 +56,10 @@ jobs:
 
       - name: Install uv
         if: ${{ env.RELEVANT == 'true' }}
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@v9
         with:
           enable-cache: true
+          python-version: '3.12'
 
       - name: "Recompile requirements"
         if: ${{ env.RELEVANT == 'true' }}
