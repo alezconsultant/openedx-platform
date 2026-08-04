@@ -27,6 +27,18 @@ from inside devstack's lms-shell or another Linux environment.
 
 If you don't have write permissions to openedx/edx-platform, you'll need to run these workflows on a fork.
 
+Keeping extra personal packages installed
+=========================================
+
+The old ``requirements/edx/private.in``/``private.txt`` mechanism (an
+uncommitted, git-ignored pair of files letting you keep extra personal
+packages installed alongside the official requirements, surviving a
+``pip-sync``) has no direct successor file, but the same need is covered by
+``uv sync``'s ``--inexact`` flag: ``uv pip install <package>`` your extra
+tool once, then pass ``--inexact`` on subsequent ``uv sync`` calls (e.g.
+``uv sync --group default --inexact``) to keep it from being removed as an
+"extraneous" package.
+
 Workflows and Makefile targets
 ******************************
 

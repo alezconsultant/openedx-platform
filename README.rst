@@ -103,7 +103,7 @@ Language Packages:
 
 * Backend application:
 
-  - ``uv sync --no-default-groups`` (production)
+  - ``uv sync --no-default-groups --group bundled`` (production)
   - ``uv sync --group default`` (development)
 
   Some Python packages have system dependencies. For example, installing these packages on Debian or Ubuntu will require first running ``sudo apt install python3-dev default-libmysqlclient-dev build-essential pkg-config`` to satisfy the requirements of the ``mysqlclient`` Python package.
