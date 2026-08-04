@@ -123,6 +123,8 @@ jobs:
             scripts/**/pyproject.toml
             scripts/**/uv.lock
             scripts/**/requirements*
+            pyproject.toml
+            uv.lock
           commit-message: |
             feat: Upgrade Python dependency ${{ inputs.package }}
 

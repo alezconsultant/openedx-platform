@@ -99,7 +99,7 @@ Running Python Unit tests
 *************************
 
 The following commands need to be run within a Python environment in
-which the ``testing`` dependency group (``uv sync --only-group testing``) has
+which the ``testing`` dependency group (``uv sync --no-default-groups --group testing``) has
 been installed. If you are using a
 Docker-based Open edX distribution, then you probably will want to run these
 commands within the LMS and/or CMS Docker containers.
