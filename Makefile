@@ -144,22 +144,20 @@ compile-requirements: ## Regenerate uv.lock for the root project and all uv sub-
 		echo ; \
 		echo "== $$d ===============================" ; \
 		uv run --no-project --with edx-lint edx_lint write_uv_constraints $$d/pyproject.toml && \
-		(cd $$d && uv lock ${UV_LOCK_OPTS}) \
-		|| exit 1; \
-	done
-	@for d in scripts/user_retirement scripts/structures_pruning; do \
+		(cd $$d && uv lock ${UV_LOCK_OPTS}) && \
 		{ \
 			echo "# GENERATED FILE, DO NOT EDIT DIRECTLY."; \
 			echo "# Compatibility export for anyone still 'pip install -r $$d/requirements/base.txt'"; \
 			echo "# directly instead of using uv. Source of truth: $$d/pyproject.toml / uv.lock."; \
 			(cd $$d && uv export --frozen --no-hashes --no-emit-project); \
-		} > $$d/requirements/base.txt; \
+		} > $$d/requirements/base.txt && \
 		{ \
 			echo "# GENERATED FILE, DO NOT EDIT DIRECTLY."; \
 			echo "# Compatibility export for anyone still 'pip install -r $$d/requirements/testing.txt'"; \
 			echo "# directly instead of using uv. Source of truth: $$d/pyproject.toml (test group) / uv.lock."; \
 			(cd $$d && uv export --frozen --no-hashes --group test --no-emit-project); \
-		} > $$d/requirements/testing.txt; \
+		} > $$d/requirements/testing.txt \
+		|| exit 1; \
 	done
 
 upgrade: ## update all dependencies (uv.lock for the root project and all uv sub-projects) to the latest releases satisfying our constraints
