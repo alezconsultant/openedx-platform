@@ -14,8 +14,7 @@ Codejail's isolated sandbox environment.
 The three standalone script directories at the repo root (``scripts/xblock``,
 ``scripts/user_retirement``, ``scripts/structures_pruning``) each have their
 own ``pyproject.toml`` + ``uv.lock`` too, independent of both the main app and
-each other. This completes the migration from pip-compile tracked in
-`public-engineering#543`_.
+each other.
 
 All of these are manipulated using the Makefile targets below in a Linux
 environment (to match our build and deploy systems); for developers on Mac,
@@ -23,7 +22,6 @@ this can be achieved by using the GitHub workflows or by running Make targets
 from inside devstack's lms-shell or another Linux environment.
 
 .. _uv: https://docs.astral.sh/uv/
-.. _public-engineering#543: https://github.com/openedx/public-engineering/issues/543
 
 If you don't have write permissions to openedx/edx-platform, you'll need to run these workflows on a fork.
 
