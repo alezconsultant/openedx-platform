@@ -139,7 +139,11 @@ skip this section.
 First, ensure you have a Python enironment with all edx-platform dependencies
 installed::
 
-  uv sync --no-default-groups --group bundled --group assets
+  uv sync --no-default-groups --group bundled
+
+``collectstatic`` doesn't need the ``assets`` group (that's for the Sass/webpack
+build tooling used in `Build assets`_ above, not for collection) -- if you're
+following both sections in the same environment, you'll already have it either way.
 
 Next, download localized versions of edx-platform assets. Under the hood, this
 command uses the `Open edX Atlas`_ tool, which manages aggregated translations
