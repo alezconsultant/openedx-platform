@@ -17,9 +17,10 @@ jobs:
         os: [ubuntu-24.04]
         python-version:
           - "3.12"
-        # 'pinned' is used to install the latest patch version of Django
-        # within the global constraint i.e. Django==4.2.8 in current case
-        # because we have global constraint of Django<4.2
+        # 'pinned' installs whatever Django version `testing` resolves to under the
+        # global `Django<6.0` constraint (currently 5.2.x). To test another supported
+        # version instead, use a value matching a real `djangoNN` dependency-group in
+        # pyproject.toml (e.g. "42" for the `django42` group), synced below.
         django-version: ["pinned"]
         mongo-version:
           - "7"
@@ -86,11 +87,10 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          make dev-requirements
-          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
-          if [[ "${{ matrix.django-version }}" != "pinned" ]]; then
-            uv pip install "django~=${{ matrix.django-version }}.0"
-            uv pip check # fail if this test-reqs/Django combination is broken
+          if [[ "${{ matrix.django-version }}" == "pinned" ]]; then
+            make dev-requirements
+          else
+            uv sync --group default --group "django${{ matrix.django-version }}" --frozen
           fi
 
       - name: list installed package versions
@@ -104,9 +104,9 @@ jobs:
           STUDIO_CFG: lms/envs/minimal.yml
         run: |
           echo "Running the LMS migrations."
-          ./manage.py lms migrate
+          uv run ./manage.py lms migrate
           echo "Running the CMS migrations."
-          ./manage.py cms migrate
+          uv run ./manage.py cms migrate
 
   # This job aggregates test results. It's the required check for branch protection.
   # https://github.com/marketplace/actions/alls-green#why
