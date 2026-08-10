@@ -1,44 +1,23 @@
-# Temporarily disabled: `find_python_dependencies` (from edx-repo-tools) only
-# knows how to scan pip-compile's requirements/edx/{base,testing}.txt for
-# undocumented git-hosted dependencies. Those files were removed when this
-# repo switched to pyproject.toml + uv (see
-# https://github.com/openedx/public-engineering/issues/543). Re-enable once
-# edx-repo-tools can scan pyproject.toml/uv.lock instead — tracked at
-# https://github.com/openedx/repo-tools/issues/725, fix proposed in
-# https://github.com/openedx/repo-tools/pull/735.
 name: Check Python Dependencies
 
 on:
-  workflow_dispatch:
+  pull_request:
+  merge_group:
 
 jobs:
   check_dependencies:
     runs-on: ubuntu-latest
-    if: false
-
-    strategy:
-      matrix:
-        python-version: ["3.12"]
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v7
 
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Install repo-tools
-        run: pip install edx-repo-tools[find_dependencies]
-
-      - name: Install setuptool
-        run: pip install setuptools
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
 
       - name: Run Python script
         run: |
-          find_python_dependencies \
-            --req-file requirements/edx/base.txt \
-            --req-file requirements/edx/testing.txt \
+          uvx --from 'edx-repo-tools[find_dependencies]' find_python_dependencies \
+            --req-file uv.lock \
             --ignore https://github.com/mitodl/edx-sga \
             --ignore https://github.com/open-craft/xblock-poll
