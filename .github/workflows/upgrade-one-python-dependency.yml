@@ -13,7 +13,7 @@ on:
         required: true
         type: string
       version:
-        description: "Version number to upgrade to in constraints.txt (only needed if pinned)"
+        description: "Version number to upgrade to in [tool.edx_lint].uv_constraints (only needed if pinned)"
         default: ""
         type: string
       change_desc:
@@ -52,29 +52,7 @@ jobs:
           # TOML array rather than sed-patching a plain-text file. --no-project
           # avoids syncing the whole project just to edit a TOML file with tomlkit.
           test -z "$NEW_VERSION" && exit 0
-          uv run --no-project --with tomlkit python3 - <<'PYEOF'
-          import os
-          import re
-
-          import tomlkit
-
-          package = os.environ["PACKAGE"]
-          new_version = os.environ["NEW_VERSION"]
-
-
-          def normalized_name(spec):
-              return re.split(r"[<>=!~\[; ]", spec, maxsplit=1)[0].lower().replace("_", "-")
-
-
-          path = "pyproject.toml"
-          doc = tomlkit.parse(open(path, encoding="utf-8").read())
-          constraints = doc["tool"]["edx_lint"]["uv_constraints"]
-          target = normalized_name(package)
-          for i, spec in enumerate(constraints):
-              if normalized_name(str(spec)) == target and "==" in str(spec):
-                  constraints[i] = re.sub(r"==[^,]+", f"=={new_version}", str(spec))
-          open(path, "w", encoding="utf-8").write(tomlkit.dumps(doc))
-          PYEOF
+          uv run --no-project --with tomlkit python3 scripts/update_uv_constraint_version.py
 
       - name: Run make upgrade-package
         env:
