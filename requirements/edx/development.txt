@@ -943,7 +943,7 @@ openedx-events==11.2.0
     #   openedx-core
     #   openedx-platform
     #   ora2
-openedx-filters==3.7.0
+openedx-filters==3.9.0
     # via
     #   edx-enterprise
     #   lti-consumer-xblock
