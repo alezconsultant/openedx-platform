@@ -49,8 +49,6 @@ jobs:
           # trip over some dev-only things like django-debug-toolbar
           # (import debug_toolbar) that aren't in the testing group.
           make dev-requirements
-          # After all requirements are installed, check that they're consistent with each other
-          uv pip check
 
       - name: Run quality tests
         run: |

@@ -95,7 +95,7 @@ jobs:
 
       - name: list installed package versions
         run: |
-          uv pip freeze
+          uv tree
 
       - name: Run Tests
         env:
