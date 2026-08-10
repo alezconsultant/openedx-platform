@@ -170,18 +170,18 @@ upgrade-package: ## update just one package to the latest usable release
 	$(MAKE) compile-requirements UV_LOCK_OPTS="--upgrade-package $(package)"
 
 check-types: ## run static type-checking tests
-	mypy
+	uv run mypy
 
 lint-imports:
-	lint-imports
+	uv run lint-imports
 
 migrate-lms:
-	python manage.py lms showmigrations --database default --traceback --pythonpath=.
-	python manage.py lms migrate --database default --traceback --pythonpath=.
+	uv run python manage.py lms showmigrations --database default --traceback --pythonpath=.
+	uv run python manage.py lms migrate --database default --traceback --pythonpath=.
 
 migrate-cms:
-	python manage.py cms showmigrations --database default --traceback --pythonpath=.
-	python manage.py cms migrate --database default --noinput --traceback --pythonpath=.
+	uv run python manage.py cms showmigrations --database default --traceback --pythonpath=.
+	uv run python manage.py cms migrate --database default --noinput --traceback --pythonpath=.
 
 migrate: migrate-lms migrate-cms
 
@@ -193,33 +193,33 @@ ubuntu-requirements: ## Install ubuntu 22.04 system packages needed for `pip ins
 	sudo apt install libmysqlclient-dev libxmlsec1-dev
 
 xsslint: ## check xss for quality issuest
-	python scripts/xsslint/xss_linter.py \
+	uv run python scripts/xsslint/xss_linter.py \
 	--rule-totals \
 	--config=scripts.xsslint_config \
 	--thresholds=scripts/xsslint_thresholds.json
 
 ruff: ## check python files with ruff
-	ruff check .
+	uv run ruff check .
 
 ## Re-enable --lint flag when this issue https://github.com/openedx/edx-platform/issues/35775 is resolved
 pii_check: ## check django models for pii annotations
 	DJANGO_SETTINGS_MODULE=cms.envs.test \
-	code_annotations django_find_annotations \
+	uv run code_annotations django_find_annotations \
 		--config_file .pii_annotations.yml \
 		--coverage \
 		--lint
 
 	DJANGO_SETTINGS_MODULE=lms.envs.test \
-	code_annotations django_find_annotations \
+	uv run code_annotations django_find_annotations \
 		--config_file .pii_annotations.yml \
 		--coverage \
 		--lint
 
 check_keywords: ## check django models for reserve keywords
 	DJANGO_SETTINGS_MODULE=cms.envs.test \
-	python manage.py cms check_reserved_keywords \
+	uv run python manage.py cms check_reserved_keywords \
 	--override_file db_keyword_overrides.yml
 
 	DJANGO_SETTINGS_MODULE=lms.envs.test \
-	python manage.py lms check_reserved_keywords \
+	uv run python manage.py lms check_reserved_keywords \
 	--override_file db_keyword_overrides.yml

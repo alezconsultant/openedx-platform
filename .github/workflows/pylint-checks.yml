@@ -49,13 +49,12 @@ jobs:
           # trip over some dev-only things like django-debug-toolbar
           # (import debug_toolbar) that aren't in the testing group.
           make dev-requirements
-          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
           # After all requirements are installed, check that they're consistent with each other
           uv pip check
 
       - name: Run quality tests
         run: |
-          pylint ${{ matrix.path }}
+          uv run pylint ${{ matrix.path }}
 
   # This job aggregates test results. It's the required check for branch protection.
   # https://github.com/marketplace/actions/alls-green#why

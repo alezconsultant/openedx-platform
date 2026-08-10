@@ -50,9 +50,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install Required Python Dependencies
-        run: |
-          make base-requirements
-          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+        run: make base-requirements
 
       - name: Install npm
         run: npm ci  

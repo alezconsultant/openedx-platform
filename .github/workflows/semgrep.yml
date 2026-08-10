@@ -34,9 +34,7 @@ jobs:
           python-version: "${{ matrix.python-version }}"
 
       - name: Install semgrep
-        run: |
-          uv sync --only-group semgrep --frozen
-          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+        run: uv sync --only-group semgrep --frozen
 
       - name: Run semgrep
         env:
@@ -45,5 +43,5 @@ jobs:
           # https://github.com/returntocorp/semgrep/issues/8608
           COLUMNS: 80
         run: |
-          semgrep scan --config test_root/semgrep/ --error --quiet \
+          uv run semgrep scan --config test_root/semgrep/ --error --quiet \
             -- lms cms common openedx

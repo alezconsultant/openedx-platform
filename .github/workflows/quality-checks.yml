@@ -48,8 +48,10 @@ jobs:
         env:
           PIP_SRC: ${{ runner.temp }}
         run: |
+          # `uv sync` (inside test-requirements) installs this project itself by
+          # default (no --no-install-project), same guarantee the old standalone
+          # `pip install -e .` step gave — no separate install step needed here.
           make test-requirements
-          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
 
       - name: Install npm
         env:
@@ -61,7 +63,7 @@ jobs:
           PIP_SRC: ${{ runner.temp }}
           TARGET_BRANCH: ${{ github.base_ref }}
         run: |
-            ruff check --output-format=github .
+            uv run ruff check --output-format=github .
             make xsslint
             make pii_check
             make check_keywords

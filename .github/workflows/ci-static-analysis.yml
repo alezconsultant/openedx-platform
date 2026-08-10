@@ -27,9 +27,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install python dependencies
-        run: |
-          make dev-requirements
-          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+        run: make dev-requirements
 
       - name: Static code analysis
         run: make check-types
