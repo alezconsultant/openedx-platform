@@ -63,6 +63,10 @@ lms/envs/minimal.yml                                                 @feanil
 lms/envs/production.py                                               @feanil @kdmccormick
 cms/envs/production.py                                               @feanil @kdmccormick
 
+# Team-governed version pins (see the file's own header for why) -- require review
+# from whoever owns each pinned package's manual-bump process, not routine dep work.
+requirements/team_constraints.txt                                    @feanil @kdmccormick
+
 # Review GitHub Actions workflow changes (incl. Dependabot PRs).
 # Replaces the deprecated `reviewers:` key in dependabot.yml.
 /.github/workflows/                                                  @openedx/wg-maintenance-edx-platform

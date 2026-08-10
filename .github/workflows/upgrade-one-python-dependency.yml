@@ -13,7 +13,7 @@ on:
         required: true
         type: string
       version:
-        description: "Version number to upgrade to in [tool.edx_lint].uv_constraints (only needed if pinned)"
+        description: "Version number to upgrade to, if pinned in [tool.edx_lint].uv_constraints or requirements/team_constraints.txt (only needed if pinned)"
         default: ""
         type: string
       change_desc:
@@ -47,10 +47,11 @@ jobs:
           NEW_VERSION: "${{ inputs.version }}"
           PACKAGE: "${{ inputs.package }}"
         run: |
-          # Constraints now live in [tool.edx_lint].uv_constraints in pyproject.toml
-          # (previously requirements/constraints.txt), so this needs to edit that
-          # TOML array rather than sed-patching a plain-text file. --no-project
-          # avoids syncing the whole project just to edit a TOML file with tomlkit.
+          # Constraints now live in [tool.edx_lint].uv_constraints in pyproject.toml,
+          # or requirements/team_constraints.txt for team-governed pins (previously
+          # requirements/constraints.txt) -- scripts/update_uv_constraint_version.py
+          # checks the team-governed file first. --no-project avoids syncing the
+          # whole project just to run this one script.
           test -z "$NEW_VERSION" && exit 0
           uv run --no-project --with tomlkit python3 scripts/update_uv_constraint_version.py
 

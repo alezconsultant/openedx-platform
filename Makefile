@@ -89,6 +89,7 @@ requirements: dev-requirements ## install development environment requirements
 
 compile-requirements: ## Regenerate uv.lock for the root project and all uv sub-projects
 	uv run --no-project --with edx-lint edx_lint write_uv_constraints pyproject.toml
+	uv run --no-project --with tomlkit python3 scripts/merge_team_constraints.py
 	uv lock ${UV_LOCK_OPTS}
 
 	@# Compatibility exports for external tooling (e.g. tutor's Dockerfile) that

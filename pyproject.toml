@@ -277,17 +277,20 @@ conflicts = [
 ]
 
 #  DO NOT EDIT constraint-dependencies DIRECTLY.
-#  This list is managed by `edx_lint write_uv_constraints`
-#  and will be overwritten the next time `make upgrade` is run.
+#  This list is managed by `edx_lint write_uv_constraints` plus a merge step (see
+#  scripts/merge_team_constraints.py) and will be overwritten the next time
+#  `make upgrade` is run.
 #  - GLOBAL constraints: edit edx_lint/files/common_constraints.txt
 #  - REPO-SPECIFIC constraints: edit [tool.edx_lint].uv_constraints in this file
+#  - TEAM-GOVERNED constraints (need that team's review to change): edit
+#    requirements/team_constraints.txt instead -- entries there win over anything
+#    the other two sources produce for the same package.
 constraint-dependencies = [
     "Django<6.0",
     "elasticsearch==7.9.1",
     "celery>=5.2.2,!=5.6.1,<6.0.0",
     "django-oauth-toolkit==1.7.1",
     "django-stubs<6",
-    "edx-enterprise==8.7.2",
     "libsass==0.10.0",
     "numpy<2.0.0",
     "openedx-core<2",
@@ -303,6 +306,7 @@ constraint-dependencies = [
     "sphinx-autoapi<3.6.1",
     "setuptools<82",
     "astroid==4.0.4",
+    "edx-enterprise==8.7.2",
 ]
 [tool.edx_lint]
 uv_constraints = [
@@ -329,11 +333,6 @@ uv_constraints = [
     # including the note on "Partial Support".
     # Issue: https://github.com/openedx/edx-platform/issues/35275
     "django-stubs<6",
-    # Date: 2019-08-16
-    # The team that owns this package will manually bump this package rather than having it pulled in automatically.
-    # This is to allow them to better control its deployment and to do it in a process that works better
-    # for them.
-    "edx-enterprise==8.7.2",
     # Date: 2023-07-26
     # Our legacy Sass code is incompatible with anything except this ancient libsass version.
     # Here is a ticket to upgrade, but it's of debatable importance given that we are rapidly moving
