@@ -94,6 +94,8 @@ compile-requirements: ## Regenerate uv.lock for the root project and all uv sub-
 	@# Compatibility exports for external tooling (e.g. tutor's Dockerfile) that
 	@# still does `pip install -r requirements/edx/<name>.txt` directly. These are
 	@# GENERATED FILES -- see the header comment in each for what regenerates them.
+	@# TODO: Remove these exports (and the scripts/*/requirements/*.txt ones below)
+	@# once external consumers (Tutor, Devstack, etc.) have migrated to `uv sync`.
 	@mkdir -p requirements/edx
 	@{ \
 		echo "# GENERATED FILE, DO NOT EDIT DIRECTLY."; \
