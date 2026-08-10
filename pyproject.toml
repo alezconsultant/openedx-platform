@@ -63,7 +63,7 @@ dependencies = [
     "edx-opaque-keys>=2.12.0",
     "edx-organizations",
     "edx-proctoring>=2.0.1",
-    "edx-rest-api-client", # using hash to support django42
+    "edx-rest-api-client",
     "edx-search",
     "edx-submissions",
     "edx-toggles", # Feature toggles management

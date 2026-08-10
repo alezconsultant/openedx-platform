@@ -45,8 +45,6 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install Required Python Dependencies
-        env:
-          PIP_SRC: ${{ runner.temp }}
         run: |
           # `uv sync` (inside test-requirements) installs this project itself by
           # default (no --no-install-project), same guarantee the old standalone
@@ -54,13 +52,10 @@ jobs:
           make test-requirements
 
       - name: Install npm
-        env:
-          PIP_SRC: ${{ runner.temp }}
         run: npm ci
 
       - name: Run Quality Tests
         env:
-          PIP_SRC: ${{ runner.temp }}
           TARGET_BRANCH: ${{ github.base_ref }}
         run: |
             uv run ruff check --output-format=github .
