@@ -8,12 +8,22 @@ jobs:
   check_dependencies:
     runs-on: ubuntu-latest
 
+    # Keeping this matrix (even though uvx itself doesn't need per-version handling
+    # the way the old actions/setup-python step did) preserves the "check_dependencies
+    # (3.12)" check name that branch protection requires -- dropping it renames the
+    # reported context, leaving the required check permanently stuck on "Expected".
+    strategy:
+      matrix:
+        python-version: ["3.12"]
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v7
 
       - name: Install uv
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          python-version: ${{ matrix.python-version }}
 
       - name: Run Python script
         run: |
