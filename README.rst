@@ -99,7 +99,7 @@ Language Packages:
 
 * Backend build:
 
-  - ``uv sync --group assets``
+  - ``uv sync --no-default-groups --only-group assets``
 
 * Backend application:
 
