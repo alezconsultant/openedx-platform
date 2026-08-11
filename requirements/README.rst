@@ -3,7 +3,7 @@ Requirements/dependencies
 
 The main application's Python dependencies are declared in the root
 ``pyproject.toml`` (``[project.dependencies]`` for runtime deps,
-``[dependency-groups]`` for testing/development/doc/assets/semgrep tooling,
+``[dependency-groups]`` for testing/development/doc/assets tooling,
 and ``[tool.edx_lint].uv_constraints`` for repo-specific version pins) and
 locked in the root ``uv.lock``, managed with `uv`_.
 
@@ -18,10 +18,10 @@ a small, hand-edited, CODEOWNERS-gated file for version pins a specific team wan
 to control manually rather than having them move automatically (see "Downgrade a
 dependency" below).
 
-The three standalone script directories at the repo root (``scripts/xblock``,
-``scripts/user_retirement``, ``scripts/structures_pruning``) each have their
-own ``pyproject.toml`` + ``uv.lock`` too, independent of both the main app and
-each other.
+The four standalone script directories at the repo root (``scripts/xblock``,
+``scripts/user_retirement``, ``scripts/structures_pruning``, ``scripts/semgrep``)
+each have their own ``pyproject.toml`` + ``uv.lock`` too, independent of both
+the main app and each other.
 
 All of these are manipulated using the Makefile targets below in a Linux
 environment (to match our build and deploy systems); for developers on Mac,

@@ -235,9 +235,6 @@ development = [
     "vulture", # Detects possible dead/unused code, used in scripts/find-dead-code.sh
     "watchdog", # Used by `npm run watch` to auto-recompile when assets are changed
 ]
-semgrep = [
-    "semgrep", # Semgrep performs structural code searches
-]
 # Alternate-Django-version test matrix groups. Each is a real, independently-resolved
 # environment (not a runtime `uv pip install` patch on top of `testing`) — see
 # [tool.uv].conflicts below, which is required for these to coexist in one uv.lock at

@@ -121,8 +121,8 @@ compile-requirements: ## Regenerate uv.lock for the root project and all uv sub-
 		uv export --frozen --no-hashes --group default --no-emit-project; \
 	} > requirements/edx/development.txt
 
-	@# requirements/edx-sandbox and scripts/xblock: single compat export, no dependency-groups.
-	@for d in requirements/edx-sandbox scripts/xblock; do \
+	@# requirements/edx-sandbox, scripts/xblock, scripts/semgrep: single compat export, no dependency-groups.
+	@for d in requirements/edx-sandbox scripts/xblock scripts/semgrep; do \
 		echo ; \
 		echo "== $$d ===============================" ; \
 		uv run --no-project --with edx-lint edx_lint write_uv_constraints $$d/pyproject.toml && \
