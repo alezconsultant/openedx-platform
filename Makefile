@@ -91,77 +91,8 @@ compile-requirements: ## Regenerate uv.lock for the root project and all uv sub-
 	uv run --no-project --with edx-lint edx_lint write_uv_constraints pyproject.toml
 	uv run --no-project --with tomlkit python3 scripts/merge_team_constraints.py
 	uv lock ${UV_LOCK_OPTS}
-
-	@# Compatibility exports for external tooling (e.g. tutor's Dockerfile) that
-	@# still does `pip install -r requirements/edx/<name>.txt` directly. These are
-	@# GENERATED FILES -- see the header comment in each for what regenerates them.
-	@# TODO: Remove these exports (and the scripts/*/requirements/*.txt ones below)
-	@# once external consumers (Tutor, Devstack, etc.) have migrated to `uv sync`.
 	@mkdir -p requirements/edx
-	@{ \
-		echo "# GENERATED FILE, DO NOT EDIT DIRECTLY."; \
-		echo "# Compatibility export of [project.dependencies] plus the 'bundled' group"; \
-		echo "# (optional third-party add-ons installed by default) for tools that still"; \
-		echo "# 'pip install -r requirements/edx/base.txt' directly instead of using uv."; \
-		echo "# Source of truth: [project.dependencies] / [dependency-groups].bundled in pyproject.toml / uv.lock."; \
-		uv export --frozen --no-hashes --no-default-groups --group bundled --no-emit-project; \
-	} > requirements/edx/base.txt
-	@{ \
-		echo "# GENERATED FILE, DO NOT EDIT DIRECTLY."; \
-		echo "# Compatibility export of the 'assets' dependency-group for tools that still"; \
-		echo "# 'pip install -r requirements/edx/assets.txt' directly instead of using uv."; \
-		echo "# Source of truth: [dependency-groups].assets in pyproject.toml / uv.lock."; \
-		uv export --frozen --no-hashes --only-group assets --no-emit-project; \
-	} > requirements/edx/assets.txt
-	@{ \
-		echo "# GENERATED FILE, DO NOT EDIT DIRECTLY."; \
-		echo "# Compatibility export of the 'default' dependency-group for tools that still"; \
-		echo "# 'pip install -r requirements/edx/development.txt' directly instead of using uv."; \
-		echo "# Source of truth: [dependency-groups].default in pyproject.toml / uv.lock."; \
-		uv export --frozen --no-hashes --group default --no-emit-project; \
-	} > requirements/edx/development.txt
-
-	@# requirements/edx-sandbox, scripts/xblock, scripts/semgrep: single compat export, no dependency-groups.
-	@for d in requirements/edx-sandbox scripts/xblock scripts/semgrep; do \
-		echo ; \
-		echo "== $$d ===============================" ; \
-		uv run --no-project --with edx-lint edx_lint write_uv_constraints $$d/pyproject.toml && \
-		(cd $$d && uv lock ${UV_LOCK_OPTS}) \
-		|| exit 1; \
-	done
-	@{ \
-		echo "# GENERATED FILE, DO NOT EDIT DIRECTLY."; \
-		echo "# Compatibility export for anyone still 'pip install -r requirements/edx-sandbox/base.txt'"; \
-		echo "# directly instead of using uv. Source of truth: requirements/edx-sandbox/pyproject.toml / uv.lock."; \
-		(cd requirements/edx-sandbox && uv export --frozen --no-hashes --no-emit-project); \
-	} > requirements/edx-sandbox/base.txt
-	@{ \
-		echo "# GENERATED FILE, DO NOT EDIT DIRECTLY."; \
-		echo "# Compatibility export for anyone still 'pip install -r scripts/xblock/requirements.txt'"; \
-		echo "# directly instead of using uv. Source of truth: scripts/xblock/pyproject.toml / uv.lock."; \
-		(cd scripts/xblock && uv export --frozen --no-hashes --no-emit-project); \
-	} > scripts/xblock/requirements.txt
-
-	@# scripts/user_retirement and scripts/structures_pruning: base + testing (test group) compat exports.
-	@for d in scripts/user_retirement scripts/structures_pruning; do \
-		echo ; \
-		echo "== $$d ===============================" ; \
-		uv run --no-project --with edx-lint edx_lint write_uv_constraints $$d/pyproject.toml && \
-		(cd $$d && uv lock ${UV_LOCK_OPTS}) && \
-		{ \
-			echo "# GENERATED FILE, DO NOT EDIT DIRECTLY."; \
-			echo "# Compatibility export for anyone still 'pip install -r $$d/requirements/base.txt'"; \
-			echo "# directly instead of using uv. Source of truth: $$d/pyproject.toml / uv.lock."; \
-			(cd $$d && uv export --frozen --no-hashes --no-emit-project); \
-		} > $$d/requirements/base.txt && \
-		{ \
-			echo "# GENERATED FILE, DO NOT EDIT DIRECTLY."; \
-			echo "# Compatibility export for anyone still 'pip install -r $$d/requirements/testing.txt'"; \
-			echo "# directly instead of using uv. Source of truth: $$d/pyproject.toml (test group) / uv.lock."; \
-			(cd $$d && uv export --frozen --no-hashes --group test --no-emit-project); \
-		} > $$d/requirements/testing.txt \
-		|| exit 1; \
-	done
+	python3 scripts/compile_requirements_exports.py ${UV_LOCK_OPTS}
 
 upgrade: ## update all dependencies (uv.lock for the root project and all uv sub-projects) to the latest releases satisfying our constraints
 	$(MAKE) compile-requirements UV_LOCK_OPTS="--upgrade"
