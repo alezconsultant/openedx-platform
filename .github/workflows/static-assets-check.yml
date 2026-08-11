@@ -58,13 +58,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install Python Deps for Build and Collection
-        run: |
-          uv sync --no-default-groups --group bundled --group assets --frozen
-          # Unlike a direct `./manage.py`/Makefile invocation, `npm run build`/
-          # `build-dev` (below) shells out to `scripts/compile_sass.py` bare via
-          # package.json, with no way to prefix that with `uv run` — it needs the
-          # venv's Python (with `libsass`) resolvable via bare `python` on PATH.
-          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+        run: uv sync --no-default-groups --group bundled --group assets --frozen
 
       - name: Add node_modules bin to $Path
         run: echo $GITHUB_WORKSPACE/node_modules/.bin >> $GITHUB_PATH
@@ -74,14 +68,20 @@ jobs:
           COMPREHENSIVE_THEMES_DIR: ./themes
         run: |
           npm clean-install --dev
-          npm run build-dev
+          # `npm run build-dev` shells out to `scripts/compile_sass.py` bare via
+          # package.json (relying on its own `#!/usr/bin/env python` shebang), so
+          # it needs the venv's Python (with `libsass`) resolvable on PATH. `uv
+          # run` prepends the venv's bin/ to PATH for the wrapped process and all
+          # its descendants, so wrapping the outer npm invocation is sufficient --
+          # no need to splice $GITHUB_PATH for the rest of the job.
+          uv run npm run build-dev
 
       - name: Check Prod Assets Build
         env:
           COMPREHENSIVE_THEMES_DIR: ./themes
         run: |
           npm clean-install
-          npm run build
+          uv run npm run build
 
       - name: Check Assets Collection
         env:
