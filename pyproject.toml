@@ -207,6 +207,10 @@ testing = [
     "py", # Needed for pytest configurations, was previously been fetched through tox
 ]
 docs = [
+    # matches requirements/edx/doc.in's old `-r base.txt` -- docs/conf.py imports
+    # cms.envs.common, whose add_optional_apps() needs the bundled XBlocks/apps
+    # importable to succeed (e.g. openassessment), not just doc-building tools.
+    {include-group = "bundled"},
     "code-annotations", # provides annotations for certain documentation
     "sphinx-book-theme", # Common theme for all Open edX projects
     "gitpython", # fetch git repo information
