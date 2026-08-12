@@ -9,18 +9,22 @@ build:
       # uv doesn't exist yet in RTD's freshly-created environment, so this one
       # step can't itself use uv -- everything after it does.
       - pip install uv
+      # `uv sync --active` (targeting RTD's own virtualenv directly, instead
+      # of this export+install two-step) was tried and failed on RTD's actual
+      # build runner for an unconfirmed reason -- likely `--active` not
+      # detecting an active venv there the way it did in a local simulation
+      # (this may only set PATH, not $VIRTUAL_ENV). Reverted to the confirmed-
+      # working mechanism: export to a plain requirements.txt, installed
+      # below with uv pip install --no-default-groups here (not needed above
+      # in the pre-fix version) since the `docs` group is now self-sufficient
+      # (includes `bundled` directly -- see pyproject.toml) and no longer
+      # needs the implicit default-group chain to reach it.
+      - uv export --frozen --no-hashes --no-default-groups --group docs --no-emit-project -o doc-requirements.txt
     post_install:
-      # --active: sync into RTD's own already-created/activated virtualenv
-      # directly, rather than a separate uv-managed .venv -- this keeps RTD's
-      # normal sphinx auto-build detection intact, and also installs the local
-      # project itself as an editable install (same as the old separate
-      # `pip install -e .` step, now automatic). --group, not --only-group,
-      # because the latter excludes [project.dependencies] entirely, which
-      # would leave Django/XBlock/etc. unconstrained by uv.lock's
-      # [tool.uv].constraint-dependencies, e.g. picking setuptools>=82 and
-      # breaking fs/pyfilesystem2's pkg_resources import. --frozen: never let
-      # this step attempt to re-resolve/mutate uv.lock.
-      - uv sync --active --no-default-groups --group docs --frozen
+      - uv pip install -r doc-requirements.txt
+      # --no-deps: dependencies are already installed, pinned, from doc-requirements.txt
+      # above; this step only registers the local package itself for import.
+      - uv pip install -e . --no-deps
 
 sphinx:
   configuration: docs/conf.py
