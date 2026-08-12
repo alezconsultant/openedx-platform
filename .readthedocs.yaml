@@ -9,22 +9,17 @@ build:
       # uv doesn't exist yet in RTD's freshly-created environment, so this one
       # step can't itself use uv -- everything after it does.
       - pip install uv
-      # `uv sync --active` (targeting RTD's own virtualenv directly, instead
-      # of this export+install two-step) was tried and failed on RTD's actual
-      # build runner for an unconfirmed reason -- likely `--active` not
-      # detecting an active venv there the way it did in a local simulation
-      # (this may only set PATH, not $VIRTUAL_ENV). Reverted to the confirmed-
-      # working mechanism: export to a plain requirements.txt, installed
-      # below with uv pip install --no-default-groups here (not needed above
-      # in the pre-fix version) since the `docs` group is now self-sufficient
-      # (includes `bundled` directly -- see pyproject.toml) and no longer
-      # needs the implicit default-group chain to reach it.
-      - uv export --frozen --no-hashes --no-default-groups --group docs --no-emit-project -o doc-requirements.txt
     post_install:
-      - uv pip install -r doc-requirements.txt
-      # --no-deps: dependencies are already installed, pinned, from doc-requirements.txt
-      # above; this step only registers the local package itself for import.
-      - uv pip install -e . --no-deps
+      # `uv sync --active` needs $VIRTUAL_ENV set to know which environment
+      # "active" refers to -- confirmed (via `uv sync --active -v`) that
+      # without it, uv silently falls back to a project-local `.venv`
+      # instead of erroring, which is what broke this the first time this
+      # was tried: RTD's post_install jobs only prepend to $PATH, they don't
+      # set $VIRTUAL_ENV (bare `pip`/`python` never needed it before). Derive
+      # it ourselves from `command -v python` instead of depending on RTD to
+      # set it -- standard venv layout (PEP 405) always puts the interpreter
+      # at <venv>/bin/python, so its grandparent directory is the venv root.
+      - export VIRTUAL_ENV="$(dirname "$(dirname "$(command -v python)")")" && uv sync --active --no-default-groups --group docs --frozen
 
 sphinx:
   configuration: docs/conf.py
