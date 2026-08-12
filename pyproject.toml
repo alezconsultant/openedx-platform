@@ -303,7 +303,7 @@ constraint-dependencies = [
     "sphinx-autoapi<3.6.1",
     "setuptools<82",
     "astroid==4.0.4",
-    "edx-enterprise==8.7.2",
+    "edx-enterprise==8.8.0",
 ]
 [tool.edx_lint]
 uv_constraints = [
