@@ -17,10 +17,10 @@ build:
       # sphinx auto-build detection intact.
       - uv export --frozen --no-hashes --group docs --no-emit-project -o doc-requirements.txt
     post_install:
-      - python -m pip install -r doc-requirements.txt
+      - uv pip install -r doc-requirements.txt
       # --no-deps: dependencies are already installed, pinned, from doc-requirements.txt
       # above; this step only registers the local package itself for import.
-      - python -m pip install -e . --no-deps
+      - uv pip install -e . --no-deps
 
 sphinx:
   configuration: docs/conf.py
