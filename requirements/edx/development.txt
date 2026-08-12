@@ -329,7 +329,7 @@ django-fernet-fields-v2==0.9
     # via
     #   edx-enterprise
     #   enterprise-integrated-channels
-django-filter==25.2
+django-filter==26.1
     # via
     #   edx-enterprise
     #   lti-consumer-xblock
