@@ -20,7 +20,7 @@ edx-opaque-keys==4.0.0
     # via edx-platform-structures-pruning-scripts
 iniconfig==2.3.0
     # via pytest
-packaging==26.2
+packaging==26.3
     # via pytest
 pluggy==1.6.0
     # via pytest
@@ -31,7 +31,7 @@ pymongo==4.4.0
     #   edx-opaque-keys
     #   edx-platform-structures-pruning-scripts
 pytest==9.1.1
-stevedore==5.8.0
+stevedore==5.9.0
     # via edx-opaque-keys
-typing-extensions==4.15.0
+typing-extensions==4.16.0
     # via edx-opaque-keys
