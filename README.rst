@@ -106,11 +106,6 @@ Language Packages:
   - ``uv sync --no-default-groups --group bundled`` (production)
   - ``uv sync --group default`` (development)
 
-  ``[project.dependencies]`` (the old ``base.in``'s "kernel" packages) installs
-  with every ``uv sync`` regardless of which ``--group`` you pass, so
-  ``--group bundled`` alone reproduces the old ``base.txt``'s kernel + bundled
-  combination.
-
   Some Python packages have system dependencies. For example, installing these packages on Debian or Ubuntu will require first running ``sudo apt install python3-dev default-libmysqlclient-dev build-essential pkg-config`` to satisfy the requirements of the ``mysqlclient`` Python package.
 
 Codejail Setup
