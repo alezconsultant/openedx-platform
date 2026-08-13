@@ -70,7 +70,7 @@ fi
 if ! type watchmedo 1>/dev/null 2>&1 ; then
     error "command not found: watchmedo"
     log "The \`watchdog\` Python package is probably not installed. You can install it with:"
-    log "  uv sync --group default"
+    log "  uv sync --group development"
     exit 1
 fi
 

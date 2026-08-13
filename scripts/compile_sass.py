@@ -11,18 +11,9 @@ Get more details:
      npm run compile-sass -- --help
      npm run compile-sass -- --dry
 
-Setup (Tutor and Devstack will do this for you, generally as part of a fuller
-environment sync rather than standalone -- this is the minimal command needed
-to run *only* this script):
+Setup (Tutor and Devstack will do this for you):
 
     uv sync --no-default-groups --only-group assets --no-install-project
-
-Verified: with only that minimal 4-package environment (click, libsass, nodeenv,
-six) synced, libsass's `_sass.compile_filename` binding actually compiles Sass to
-CSS correctly -- this isn't just a package-count check. (edx-bootstrap and other
-Sass partials come from `node_modules` via npm, a separate toolchain untouched by
-this dependency-group split; Tutor/Devstack always run `npm install` alongside
-this sync.)
 
 Usage:
 

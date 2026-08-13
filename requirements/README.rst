@@ -14,9 +14,8 @@ generated compatibility exports of the main app's dependencies (regenerated
 by ``make compile-requirements``, not hand-edited) for external tools like
 Tutor/Devstack that still do ``pip install -r requirements/edx/base.txt``
 directly instead of using ``uv sync`` -- plus ``requirements/team_constraints.txt``,
-a small, hand-edited, CODEOWNERS-gated file for version pins a specific team wants
-to control manually rather than having them move automatically (see "Downgrade a
-dependency" below).
+a small, hand-edited file for version pins a specific team wants to control
+manually rather than having them move automatically.
 
 The four standalone script directories at the repo root (``scripts/xblock``,
 ``scripts/user_retirement``, ``scripts/structures_pruning``, ``scripts/semgrep``)
@@ -61,7 +60,7 @@ Want to upgrade just *one* dependency without pulling in other upgrades? You can
 
 Or, if you need to do it locally, you can use the ``upgrade-package`` make target directly. For example, you could run ``make upgrade-package package=ecommerce``.
 
-If your dependency is pinned in ``[tool.edx_lint].uv_constraints`` (in ``pyproject.toml``) or ``requirements/team_constraints.txt``, you'll need to enter an explicit version number in the appropriate field when running the workflow; this will include an update to that constraint in the resulting PR. ``requirements/team_constraints.txt`` holds pins a specific team wants to control manually (see the file's own header) -- it's CODEOWNERS-gated separately from the rest of ``pyproject.toml`` for exactly that reason.
+If your dependency is pinned in ``[tool.edx_lint].uv_constraints`` (in ``pyproject.toml``) or ``requirements/team_constraints.txt``, you'll need to enter an explicit version number in the appropriate field when running the workflow; this will include an update to that constraint in the resulting PR. ``requirements/team_constraints.txt`` holds pins a specific team wants to control manually (see the file's own header).
 
 Downgrade a dependency
 ======================
@@ -72,12 +71,6 @@ If you instead need to surgically *downgrade* a dependency:
 
      # frobulator 2.x has breaking API changes; see https://github.com/openedx/edx-platform/issue/1234567 for fixing it
      "frobulator<2.0.0",
-
-   If the pin is meant to be team-governed instead -- i.e. nobody should bump it
-   without that team's sign-off, even as part of routine dependency work -- add it
-   to ``requirements/team_constraints.txt`` instead, following that file's own
-   format. CODEOWNERS gates changes to that file separately from the rest of
-   ``pyproject.toml``.
 
 2. After pushing that up to a branch, use the `compile-python-requirements.yml workflow <https://github.com/openedx/edx-platform/actions/workflows/compile-python-requirements.yml>`_ to run ``make compile-requirements`` against your branch.
 

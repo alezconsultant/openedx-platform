@@ -78,15 +78,6 @@ test-requirements: ## install production dependencies plus the testing group (us
 
 requirements: dev-requirements ## install development environment requirements
 
-# uv-managed sub-projects, each with their own pyproject.toml + uv.lock,
-# independent of the root project's dependency graph:
-#   requirements/edx-sandbox, scripts/xblock, scripts/user_retirement,
-#   scripts/structures_pruning
-# Their compatibility .txt exports (for anyone still installing via plain
-# pip) don't follow a uniform naming/grouping scheme, so each is handled
-# explicitly in compile-requirements below rather than through one generic
-# loop over a shared list.
-
 compile-requirements: ## Regenerate uv.lock for the root project and all uv sub-projects
 	uv run --no-project --with edx-lint edx_lint write_uv_constraints pyproject.toml
 	uv run --no-project --with tomlkit python3 scripts/merge_team_constraints.py

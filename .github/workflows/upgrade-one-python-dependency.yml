@@ -50,8 +50,7 @@ jobs:
           # Constraints now live in [tool.edx_lint].uv_constraints in pyproject.toml,
           # or requirements/team_constraints.txt for team-governed pins (previously
           # requirements/constraints.txt) -- scripts/update_uv_constraint_version.py
-          # checks the team-governed file first. --no-project avoids syncing the
-          # whole project just to run this one script.
+          # checks the team-governed file first.
           test -z "$NEW_VERSION" && exit 0
           uv run --no-project --with tomlkit python3 scripts/update_uv_constraint_version.py
 

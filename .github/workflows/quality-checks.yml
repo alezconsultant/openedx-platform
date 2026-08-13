@@ -46,9 +46,6 @@ jobs:
 
       - name: Install Required Python Dependencies
         run: |
-          # `uv sync` (inside test-requirements) installs this project itself by
-          # default (no --no-install-project), same guarantee the old standalone
-          # `pip install -e .` step gave — no separate install step needed here.
           make test-requirements
 
       - name: Install npm

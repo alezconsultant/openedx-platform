@@ -6,19 +6,12 @@ build:
     python: "3.12"
   jobs:
     post_create_environment:
-      # uv doesn't exist yet in RTD's freshly-created environment, so this one
-      # step can't itself use uv -- everything after it does.
+      # uv doesn't exist yet in RTD's freshly-created environment.
       - pip install uv
     post_install:
-      # `uv sync --active` needs $VIRTUAL_ENV set to know which environment
-      # "active" refers to -- confirmed (via `uv sync --active -v`) that
-      # without it, uv silently falls back to a project-local `.venv`
-      # instead of erroring, which is what broke this the first time this
-      # was tried: RTD's post_install jobs only prepend to $PATH, they don't
-      # set $VIRTUAL_ENV (bare `pip`/`python` never needed it before). Derive
-      # it ourselves from `command -v python` instead of depending on RTD to
-      # set it -- standard venv layout (PEP 405) always puts the interpreter
-      # at <venv>/bin/python, so its grandparent directory is the venv root.
+      # RTD doesn't set $VIRTUAL_ENV, so `uv sync --active` would silently
+      # fall back to a local .venv. Derive it from python's path (PEP 405:
+      # <venv>/bin/python -> grandparent is the venv root).
       - export VIRTUAL_ENV="$(dirname "$(dirname "$(command -v python)")")" && uv sync --active --no-default-groups --group docs --frozen
 
 sphinx:

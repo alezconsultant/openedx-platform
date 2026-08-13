@@ -68,20 +68,14 @@ jobs:
           COMPREHENSIVE_THEMES_DIR: ./themes
         run: |
           npm clean-install --dev
-          # `npm run build-dev` shells out to `scripts/compile_sass.py` bare via
-          # package.json (relying on its own `#!/usr/bin/env python` shebang), so
-          # it needs the venv's Python (with `libsass`) resolvable on PATH. `uv
-          # run` prepends the venv's bin/ to PATH for the wrapped process and all
-          # its descendants, so wrapping the outer npm invocation is sufficient --
-          # no need to splice $GITHUB_PATH for the rest of the job.
-          uv run npm run build-dev
+          npm run build-dev
 
       - name: Check Prod Assets Build
         env:
           COMPREHENSIVE_THEMES_DIR: ./themes
         run: |
           npm clean-install
-          uv run npm run build
+          npm run build
 
       - name: Check Assets Collection
         env:
