@@ -278,14 +278,10 @@ conflicts = [
 ]
 
 #  DO NOT EDIT constraint-dependencies DIRECTLY.
-#  This list is managed by `edx_lint write_uv_constraints` plus a merge step (see
-#  scripts/merge_team_constraints.py) and will be overwritten the next time
-#  `make upgrade` is run.
+#  This list is managed by `edx_lint write_uv_constraints` and will be
+#  overwritten the next time `make upgrade` is run.
 #  - GLOBAL constraints: edit edx_lint/files/common_constraints.txt
 #  - REPO-SPECIFIC constraints: edit [tool.edx_lint].uv_constraints in this file
-#  - TEAM-GOVERNED constraints (need that team's review to change): edit
-#    requirements/team_constraints.txt instead -- entries there win over anything
-#    the other two sources produce for the same package.
 constraint-dependencies = [
     "Django<6.0",
     "elasticsearch==7.9.1",
@@ -417,6 +413,12 @@ uv_constraints = [
     # version of astroid.
     # https://github.com/openedx/openedx-platform/issues/38066
     "astroid==4.0.4",
+    # Date: 2019-08-16 (bumped 2026-08-12 to match master's own already-reviewed
+    # bump in requirements/constraints.txt, commit 400087390a, PR #38926)
+    # The team that owns this package will manually bump this package rather than
+    # having it pulled in automatically. This is to allow them to better control its
+    # deployment and to do it in a process that works better for them.
+    "edx-enterprise==8.8.0",
 ]
 
 [tool.setuptools]

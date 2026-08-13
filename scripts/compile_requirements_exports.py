@@ -5,8 +5,7 @@ still does `pip install -r requirements/edx/<name>.txt` directly instead of
 using uv.
 
 Run by `make compile-requirements`, after the root project's own
-`edx_lint write_uv_constraints` / `merge_team_constraints.py` / `uv lock`
-steps. Any argument passed to this script (e.g. `--upgrade`,
+`edx_lint write_uv_constraints` / `uv lock` steps. Any argument passed to this script (e.g. `--upgrade`,
 `--upgrade-package foo`) is forwarded to every sub-project's `uv lock` call,
 mirroring the root project's own `UV_LOCK_OPTS`.
 
