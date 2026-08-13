@@ -8,10 +8,6 @@ jobs:
   check_dependencies:
     runs-on: ubuntu-latest
 
-    # Keeping this matrix (even though uvx itself doesn't need per-version handling
-    # the way the old actions/setup-python step did) preserves the "check_dependencies
-    # (3.12)" check name that branch protection requires -- dropping it renames the
-    # reported context, leaving the required check permanently stuck on "Expected".
     strategy:
       matrix:
         python-version: ["3.12"]
