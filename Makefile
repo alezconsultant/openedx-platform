@@ -68,7 +68,7 @@ local-requirements: ## no-op; kept for backwards compatibility -- uv sync handle
 	@true
 
 dev-requirements: ## install development environment requirements
-	uv sync --group default --frozen
+	uv sync --frozen
 
 base-requirements: ## install only production/runtime dependencies
 	uv sync --no-default-groups --group bundled --frozen

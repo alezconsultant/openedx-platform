@@ -259,17 +259,9 @@ ci = [
     "tox",
     "tox-uv",
 ]
-# The group installed by a bare `uv sync` with no --group/--only-group flags (see
-# `default-groups` below). Named `default` (rather than `dev`, uv's own built-in
-# default group name) to avoid confusion with the very similarly-named `development`
-# group that it wraps.
-default = [
-    {include-group = "development"},
-    {include-group = "ci"},
-]
 
 [tool.uv]
-default-groups = ["default"]
+default-groups = ["development", "ci"]
 conflicts = [
     [
         { group = "django42" },

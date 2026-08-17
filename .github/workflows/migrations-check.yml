@@ -90,7 +90,7 @@ jobs:
           if [[ "${{ matrix.django-version }}" == "pinned" ]]; then
             make dev-requirements
           else
-            uv sync --group default --group "django${{ matrix.django-version }}" --frozen
+            uv sync --group "django${{ matrix.django-version }}" --frozen
           fi
 
       - name: list installed package versions

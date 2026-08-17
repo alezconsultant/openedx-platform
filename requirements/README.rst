@@ -38,8 +38,8 @@ packages installed alongside the official requirements, surviving a
 ``pip-sync``) has no direct successor file, but the same need is covered by
 ``uv sync``'s ``--inexact`` flag: ``uv pip install <package>`` your extra
 tool once, then pass ``--inexact`` on subsequent ``uv sync`` calls (e.g.
-``uv sync --group default --inexact``) to keep it from being removed as an
-"extraneous" package.
+``uv sync --inexact``) to keep it from being removed as an "extraneous"
+package.
 
 Workflows and Makefile targets
 ******************************
