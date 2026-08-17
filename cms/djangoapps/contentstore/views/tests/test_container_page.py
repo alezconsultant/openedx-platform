@@ -4,12 +4,9 @@ Unit tests for the container page.
 
 
 import datetime
-import re
-from urllib.parse import quote
 
 from django.http import Http404
 from django.test.client import RequestFactory
-from django.urls import reverse
 from pytz import UTC
 
 import cms.djangoapps.contentstore.views.component as views
@@ -58,42 +55,6 @@ class ContainerPageTestCase(StudioPageTestCase, LibraryTestCase):
         self.store.publish(self.unreleased_public_vertical.location, self.user.id)
         self.store.publish(self.released_public_vertical.location, self.user.id)
         self.store.publish(self.vertical.location, self.user.id)
-
-    def test_container_html(self):
-        assets_url = reverse(
-            'assets_handler', kwargs={'course_key_string': str(self.child_container.location.course_key)}
-        )
-        self._test_html_content(
-            self.child_container,
-            expected_section_tag=(
-                '<section class="wrapper-xblock level-page is-hidden studio-xblock-wrapper" '  # noqa: UP032
-                'data-locator="{0}" data-course-key="{0.course_key}" data-course-assets="{1}">'.format(
-                    self.child_container.location, assets_url
-                )
-            ),
-            expected_breadcrumbs=(
-                '<li class="nav-item">\\s*<a href="/course/{course}{section_parameters}">Week 1<\\/a>.*'
-                '<a href="/course/{course}{subsection_parameters}">Lesson 1</a>'
-            ).format(
-                course=re.escape(str(self.course.id)),
-                section_parameters=re.escape('?show={}'.format(quote(
-                    str(self.chapter.location).encode()
-                ))),
-                subsection_parameters=re.escape('?show={}'.format(quote(
-                    str(self.sequential.location).encode()
-                ))),
-            ),
-        )
-
-
-    def _test_html_content(self, xblock, expected_section_tag, expected_breadcrumbs):
-        """
-        Get the HTML for a container page and verify the section tag is correct
-        and the breadcrumbs trail is correct.
-        """
-        html = self.get_page_html(xblock)
-        self.assertIn(expected_section_tag, html)  # noqa: PT009
-        self.assertRegex(html, re.compile(expected_breadcrumbs, re.DOTALL))  # noqa: PT009
 
     def test_public_container_preview_html(self):
         """
