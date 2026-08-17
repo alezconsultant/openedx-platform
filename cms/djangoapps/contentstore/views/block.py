@@ -9,7 +9,6 @@ from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.http import Http404, HttpResponse
 from django.utils.translation import gettext as _
-from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.decorators.http import require_http_methods
 from opaque_keys.edx.keys import CourseKey
 from openedx_authz.constants.permissions import COURSES_VIEW_COURSE
@@ -25,7 +24,7 @@ from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import (
 )
 from cms.djangoapps.contentstore.xblock_storage_handlers.xblock_helpers import get_tags_count, usage_key_with_run
 from cms.lib.xblock.authoring_mixin import VISIBILITY_VIEW
-from common.djangoapps.edxmako.shortcuts import render_to_response, render_to_string
+from common.djangoapps.edxmako.shortcuts import render_to_string
 from common.djangoapps.student.auth import has_studio_read_access, has_studio_write_access
 from common.djangoapps.util.json_request import JsonResponse, expect_json
 from openedx.core.djangoapps.authz.constants import LegacyAuthoringPermission
@@ -41,7 +40,6 @@ from xmodule.x_module import (  # pylint: disable=wrong-import-order
 )
 
 from ..helpers import is_unit
-from .component import _get_item_in_course
 from .preview import get_preview_fragment
 
 __all__ = [

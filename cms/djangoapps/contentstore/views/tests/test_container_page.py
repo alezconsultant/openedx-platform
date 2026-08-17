@@ -202,5 +202,3 @@ class ContainerPageTestCase(StudioPageTestCase, LibraryTestCase):
             usage_key_string=str(self.vertical.location)
         )
         self.assertEqual(response.status_code, 302)  # noqa: PT009
-
-

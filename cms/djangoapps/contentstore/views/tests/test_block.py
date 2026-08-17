@@ -7,7 +7,6 @@ from datetime import datetime, timedelta
 from unittest.mock import Mock, PropertyMock, patch
 
 import ddt
-from bs4 import BeautifulSoup
 from django.conf import settings
 from django.http import Http404
 from django.test import TestCase
@@ -4698,5 +4697,3 @@ class TestUpdateFromSource(ModuleStoreTestCase):
             user_id=user.id,
         )
         self.check_updated(source_block, destination_block.location)
-
-
