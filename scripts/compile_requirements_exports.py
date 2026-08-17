@@ -36,10 +36,11 @@ ROOT_EXPORTS = [
     ),
     (
         "requirements/edx/development.txt",
-        ["--group", "default"],
-        "Compatibility export of the 'default' dependency-group for tools that still\n"
+        [],
+        "Compatibility export of what a bare `uv sync` installs (the 'development'\n"
+        "# and 'ci' dependency-groups) for tools that still\n"
         "# 'pip install -r requirements/edx/development.txt' directly instead of using uv.\n"
-        "# Source of truth: [dependency-groups].default in pyproject.toml / uv.lock.",
+        "# Source of truth: [tool.uv].default-groups in pyproject.toml / uv.lock.",
     ),
 ]
 
