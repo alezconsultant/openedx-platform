@@ -194,15 +194,6 @@ def use_new_video_uploads_page(course_key):
 LEGACY_STUDIO_COURSE_OUTLINE = CourseWaffleFlag('legacy_studio.course_outline', __name__)
 
 
-def use_new_unit_page(course_key):
-    """
-    Returns a boolean if new studio unit page is enabled.
-
-    Always returns True. The legacy unit editor has been removed.
-    This function will be removed in a follow-up cleanup once all callers are updated.
-    """
-    return True
-
 
 # .. toggle_name: contentstore.mock_video_uploads
 # .. toggle_implementation: WaffleFlag
