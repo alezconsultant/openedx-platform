@@ -1088,7 +1088,7 @@ def _downloadable_certificate_message(course, cert_downloadable_status):  # pyli
 
 
 def _missing_required_verification(student, enrollment_mode):
-    return settings.FEATURES.get('ENABLE_CERTIFICATES_IDV_REQUIREMENT') and (
+    return settings.ENABLE_CERTIFICATES_IDV_REQUIREMENT and (
         enrollment_mode in CourseMode.VERIFIED_MODES and not IDVerificationService.user_is_verified(student)
     )
 
@@ -2355,7 +2355,7 @@ def courseware_mfe_search_enabled(request, course_id=None):
     else:
         has_required_enrollment = True
 
-    inclusion_date = settings.FEATURES.get('COURSEWARE_SEARCH_INCLUSION_DATE')
+    inclusion_date = settings.COURSEWARE_SEARCH_INCLUSION_DATE
     start_date = CourseOverview.get_from_id(course_key).start
     has_valid_inclusion_date = False
 
