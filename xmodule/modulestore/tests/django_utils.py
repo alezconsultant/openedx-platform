@@ -429,17 +429,33 @@ class ModuleStoreIsolationMixin(CacheIsolationMixin, SignalIsolationMixin):
         cls.disable_all_signals()
         cls.enable_signals_by_name(*cls.ENABLED_SIGNALS)
         cls.start_cache_isolation()
-        override = override_settings(
-            MODULESTORE=cls.MODULESTORE(),
-            CONTENTSTORE=cls.CONTENTSTORE(),
-        )
 
-        # getattr with a default: these snapshots exist only to assert against at
-        # teardown, and the override below replaces both settings regardless, so a
-        # missing value must not stop isolation from being established.
-        old_modulestore = copy.deepcopy(getattr(settings, 'MODULESTORE', None))
-        old_contentstore = copy.deepcopy(getattr(settings, 'CONTENTSTORE', None))
-        override.__enter__()  # pylint: disable=unnecessary-dunder-call
+        # Cache isolation is now held but the modulestore isolation is not, and
+        # end_modulestore_isolation() keys off the modulestore depth: if it is
+        # zero that call returns immediately and never unwinds the cache. So
+        # anything that raises between here and the depth increment below would
+        # strand a CACHES override for the rest of the process, which surfaces
+        # later as InvalidCacheBackendError or KeyError on a named cache rather
+        # than as an error here. cls.MODULESTORE() and cls.CONTENTSTORE() are
+        # arbitrary callables and copy.deepcopy is not total, so this is a real
+        # window, not a theoretical one. Undo the cache isolation and the signal
+        # changes if it happens.
+        try:
+            override = override_settings(
+                MODULESTORE=cls.MODULESTORE(),
+                CONTENTSTORE=cls.CONTENTSTORE(),
+            )
+
+            # getattr with a default: these snapshots exist only to assert against
+            # at teardown, and the override replaces both settings regardless, so a
+            # missing value must not stop isolation from being established.
+            old_modulestore = copy.deepcopy(getattr(settings, 'MODULESTORE', None))
+            old_contentstore = copy.deepcopy(getattr(settings, 'CONTENTSTORE', None))
+            override.__enter__()  # pylint: disable=unnecessary-dunder-call
+        except Exception:
+            cls.end_cache_isolation()
+            cls.enable_all_signals()
+            raise
 
         # settings is global and now mutated. Record the isolation before doing
         # anything else that can raise, so that a failure below is still
