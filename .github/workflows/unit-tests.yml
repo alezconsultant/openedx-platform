@@ -119,6 +119,12 @@ jobs:
             echo "report_log_arg=" >> $GITHUB_ENV
           fi
 
+      - name: report available parallelism
+        shell: bash
+        run: |
+          echo "nproc: $(nproc)"
+          uv run python -c "import os, psutil; print('logical:', os.cpu_count(), 'physical:', psutil.cpu_count(logical=False))"
+
       - name: run tests
         shell: bash
         run: |
@@ -126,7 +132,13 @@ jobs:
           # (~3.7k lines of noise). The .coverage data file is still written and
           # uploaded as an artifact for the combined `coverage` job below, which
           # is what reports to codecov.
-          uv run python -Wd -m pytest -p no:randomly --ds=${{ env.settings_path }} ${{ env.unit_test_paths }} \
+          #
+          # -n logical spreads the shard across every vCPU on the runner; without
+          # it pytest used a single core and left ~75% of the runner idle.
+          # --dist loadscope keeps each test class on one worker so that
+          # SharedModuleStoreTestCase's setUpClass work is still paid only once.
+          uv run python -Wd -m pytest -p no:randomly -n logical --dist loadscope \
+            --ds=${{ env.settings_path }} ${{ env.unit_test_paths }} \
             --cov=. --cov-report="" ${{ env.report_log_arg }}
 
       - name: Upload pytest timing report
