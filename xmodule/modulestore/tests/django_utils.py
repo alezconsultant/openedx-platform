@@ -304,15 +304,27 @@ def _describe_settings_state():
     attribute was deleted off the base object that is still in place.
     """
     wrapped = settings._wrapped  # pylint: disable=protected-access
-    layers = 0
-    while hasattr(wrapped, 'default_settings'):
-        layers += 1
-        wrapped = wrapped.default_settings
+    chain = []
+    seen = 0
+    while wrapped is not None and seen < 40:
+        seen += 1
+        own = 'CONTENTSTORE' in vars(wrapped)
+        deleted = 'CONTENTSTORE' in getattr(wrapped, '_deleted', ())
+        chain.append(
+            f"{type(wrapped).__name__}(id={id(wrapped):#x}"
+            f"{', has' if own else ''}"
+            f"{', DELETED' if deleted else ''}"
+            f"{', module=' + str(wrapped.SETTINGS_MODULE) if getattr(wrapped, 'SETTINGS_MODULE', None) else ''})"
+        )
+        wrapped = vars(wrapped).get('default_settings')
+    base = settings._wrapped  # pylint: disable=protected-access
+    while vars(base).get('default_settings') is not None:
+        base = vars(base)['default_settings']
     return (
-        f"base Settings id={id(wrapped):#x} "
-        f"module={getattr(wrapped, 'SETTINGS_MODULE', '?')} "
-        f"override layers={layers} "
-        f"CONTENTSTORE in base vars={'CONTENTSTORE' in vars(wrapped)}"
+        f"layers={len(chain)} "
+        f"MODULESTORE in base vars={'MODULESTORE' in vars(base)} "
+        f"CONTENTSTORE in base vars={'CONTENTSTORE' in vars(base)} "
+        f"chain: {' <- '.join(chain)}"
     )
 
 
