@@ -82,43 +82,23 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 3
+      mysql:
+        image: mysql:${{ matrix.mysql-version }}
+        ports:
+          - 3306:3306
+        env:
+          MYSQL_DATABASE: "edxapp"
+          MYSQL_USER: "edxapp001"
+          MYSQL_PASSWORD: "password"
+          # Fixed rather than random so the schema-cache fallback below can drop
+          # and recreate the database. This database is discarded with the job.
+          MYSQL_ROOT_PASSWORD: "rootpw"
+        options: >-
+          --health-cmd "mysqladmin ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 3
     steps:
-      # MySQL is started by hand rather than as a service because `services:`
-      # cannot pass server flags -- only `docker create` options. The durability
-      # settings below are all safe here: the database is thrown away when the
-      # job ends, so there is nothing to lose on an unclean shutdown, and the
-      # datadir lives in a tmpfs so writes never reach a disk at all. Together
-      # these are worth roughly 2-3x on a DDL-heavy workload like applying
-      # ~1800 migrations.
-      #
-      # A fixed root password (rather than MYSQL_RANDOM_ROOT_PASSWORD) so the
-      # schema-cache fallback below can drop and recreate the database.
-      - name: Start tuned MySQL
-        run: |
-          docker run -d --name mysql -p 3306:3306 \
-            --tmpfs /var/lib/mysql:rw,noexec,nosuid,size=4g \
-            -e MYSQL_DATABASE=edxapp \
-            -e MYSQL_USER=edxapp001 \
-            -e MYSQL_PASSWORD=password \
-            -e MYSQL_ROOT_PASSWORD=rootpw \
-            mysql:${{ matrix.mysql-version }} \
-            --innodb-flush-log-at-trx-commit=0 \
-            --innodb-doublewrite=0 \
-            --sync-binlog=0 \
-            --skip-log-bin \
-            --performance-schema=OFF
-          echo "Waiting for MySQL to accept connections..."
-          for _ in $(seq 1 60); do
-            if docker exec mysql mysqladmin ping -h 127.0.0.1 --silent 2>/dev/null; then
-              echo "MySQL is up."
-              exit 0
-            fi
-            sleep 2
-          done
-          echo "MySQL did not become ready in time." >&2
-          docker logs mysql >&2
-          exit 1
-
       - name: Setup mongodb user
         run: |
           docker exec ${{ job.services.mongo.id }} mongosh edxapp --eval '
@@ -192,14 +172,14 @@ jobs:
           load_cached_schema() {
             if [[ -s migrations-schema.sql ]]; then
               echo "Restoring cached schema ($(du -h migrations-schema.sql | cut -f1))."
-              docker exec -i mysql mysql -uedxapp001 -ppassword edxapp < migrations-schema.sql
+              docker exec -i ${{ job.services.mysql.id }} mysql -uedxapp001 -ppassword edxapp < migrations-schema.sql
             else
               echo "No cached schema; migrating from an empty database."
             fi
           }
 
           reset_database() {
-            docker exec mysql mysql -uroot -prootpw -e "
+            docker exec ${{ job.services.mysql.id }} mysql -uroot -prootpw -e "
               DROP DATABASE IF EXISTS edxapp;
               CREATE DATABASE edxapp;
               GRANT ALL ON edxapp.* TO 'edxapp001'@'%';"
@@ -222,7 +202,7 @@ jobs:
           fi
 
           echo "Dumping schema for the next run."
-          docker exec mysql mysqldump -uedxapp001 -ppassword \
+          docker exec ${{ job.services.mysql.id }} mysqldump -uedxapp001 -ppassword \
             --no-tablespaces --single-transaction --routines edxapp > migrations-schema.sql
 
   # This job aggregates test results. It's the required check for branch protection.
