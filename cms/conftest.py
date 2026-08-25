@@ -11,7 +11,7 @@ import logging
 
 import pytest
 
-from openedx.core.pytest_hooks import DeferPlugin
+from openedx.core.pytest_hooks import DeferPlugin, install_settings_deletion_tracer
 
 # Patch the xml libs before anything else.
 from openedx.core.lib.safe_lxml import defuse_xml_libs  # must patch xml libs before other imports execute
@@ -26,6 +26,10 @@ def pytest_configure(config):
         config.pluginmanager.register(DeferPlugin())
     else:
         logging.info("pytest did not register json_report correctly")
+
+    # Temporary: trace whoever deletes settings.CONTENTSTORE. See the note on
+    # install_settings_deletion_tracer in openedx/core/pytest_hooks.py.
+    install_settings_deletion_tracer("CONTENTSTORE")
 
 
 @pytest.fixture(autouse=True, scope='function')  # noqa: PT003
