@@ -55,7 +55,6 @@ from xmodule.data import CertificatesDisplayBehaviors
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
 
-
 # Fixed URLs for ddt parameterization. These must be stable across processes:
 # ddt puts trivial values (str/bool/None/numbers) into the generated test name,
 # so a random URL would produce different node IDs in each pytest-xdist worker.

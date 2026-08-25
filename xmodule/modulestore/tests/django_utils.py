@@ -262,9 +262,14 @@ class SignalIsolationMixin:
 
 
 def _contentstore_is_readable():
-    """Can settings.CONTENTSTORE be read right now?"""
+    """Can settings.CONTENTSTORE be read right now?
+
+    UserSettingsHolder raises AttributeError for a setting in its _deleted set,
+    so getattr with a default is not enough on its own -- the point is to
+    observe whether the lookup succeeds, not what it returns.
+    """
     try:
-        settings.CONTENTSTORE  # pylint: disable=pointless-statement
+        getattr(settings, 'CONTENTSTORE')  # noqa: B009
         return True
     except AttributeError:
         return False
@@ -338,6 +343,7 @@ class ModuleStoreIsolationMixin(CacheIsolationMixin, SignalIsolationMixin):
                 "modulestore isolation; an earlier override_settings frame is "
                 "masking it. Proceeding, since this isolation overrides it.",
                 RuntimeWarning,
+                stacklevel=2,
             )
 
         cls.disable_all_signals()
