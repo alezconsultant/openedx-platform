@@ -16,7 +16,7 @@ from unittest import skipUnless
 import crum
 from django.conf import settings
 from django.contrib import sites
-from django.core.cache import caches
+from django.core.cache import InvalidCacheBackendError, caches
 from django.core.exceptions import ImproperlyConfigured
 from django.db import DEFAULT_DB_ALIAS, connections
 from django.test import RequestFactory, TestCase, override_settings
@@ -199,7 +199,19 @@ class CacheIsolationMixin:
         # accessed using caches[name] previously, so we loop
         # over our list of overridden caches, instead.
         for cache in settings.CACHES:
-            caches[cache].clear()
+            try:
+                caches[cache].clear()
+            except (InvalidCacheBackendError, AttributeError):
+                # settings.CACHES and Django's connection handler can disagree
+                # about which aliases exist: an override_settings frame that adds
+                # caches (ModuleStoreIsolationMixin adds course_index_cache and
+                # friends) fires setting_changed on the way out, which resets the
+                # handler, and a concurrent frame can leave the two out of step.
+                # An alias that cannot be resolved has no cache to clear, so
+                # there is nothing to do -- but raising here fails the test from
+                # inside cleanup, which is how one transient disagreement turned
+                # into a hundred-plus InvalidCacheBackendError failures a run.
+                continue
 
         # The sites framework caches in a module-level dictionary.
         # Clear that.
