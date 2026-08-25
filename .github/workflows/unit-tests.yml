@@ -139,9 +139,16 @@ jobs:
           #
           # -n logical spreads the shard across every vCPU on the runner; without
           # it pytest used a single core and left ~75% of the runner idle.
-          # --dist loadscope keeps each test class on one worker so that
-          # SharedModuleStoreTestCase's setUpClass work is still paid only once.
-          uv run python -Wd -m pytest -p no:randomly -n logical --dist loadscope \
+          #
+          # --dist loadfile groups by module, not by class. ModuleStoreIsolationMixin
+          # keeps process-global stacks (__old_modulestores, __old_contentstores,
+          # __settings_overrides) on top of Django's override_settings stack, and both
+          # SharedModuleStoreTestCase.setUpClass and ModuleStoreTestCase.setUp push onto
+          # them, so unwinding has to stay strictly LIFO. Splitting a module's classes
+          # across workers (loadscope) produced interleavings that broke that nesting
+          # and left settings restored to the wrong object. Keeping whole files together
+          # preserves the within-file ordering the stacks rely on.
+          uv run python -Wd -m pytest -p no:randomly -n logical --dist loadfile \
             --ds=${{ env.settings_path }} ${{ env.unit_test_paths }} \
             --cov=. --cov-report="" ${{ env.report_log_arg }}
 
