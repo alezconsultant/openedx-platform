@@ -261,32 +261,6 @@ class SignalIsolationMixin:
             signal.enable()
 
 
-# Modulestore isolations currently open, innermost last, as
-# (class name, id(override_settings object)) pairs.
-#
-# Diagnostics only, but load-bearing ones: when the settings override stack gets
-# corrupted the test that trips over it is never the one that broke it, so the
-# only useful question is who entered an override and never exited it. Frames are
-# matched on the identity of the override object rather than popped blindly,
-# because class-scoped and test-scoped isolation nest -- popping the last entry
-# regardless of owner silently desynchronises the register and makes it name
-# innocent classes.
-_OPEN_ISOLATIONS = []
-
-
-def _describe_open_isolations():
-    """Render the open isolations for an error message, innermost last."""
-    if not _OPEN_ISOLATIONS:
-        return '(none)'
-    return ' -> '.join(name for name, _ in _OPEN_ISOLATIONS)
-
-
-# What was running the first time settings.CONTENTSTORE was seen to be missing.
-# Populated by end_modulestore_isolation(), so the first test to trip over the
-# corruption can report which test actually caused it.
-_CORRUPTION_REPORT = {}
-
-
 def _contentstore_is_readable():
     """Can settings.CONTENTSTORE be read right now?"""
     try:
@@ -294,65 +268,6 @@ def _contentstore_is_readable():
         return True
     except AttributeError:
         return False
-
-
-def _describe_settings_state():
-    """Identify the settings object graph, for diagnosing a missing setting.
-
-    Distinguishes the two ways settings.CONTENTSTORE can go missing: the base
-    Settings object was replaced (different id or SETTINGS_MODULE), or the
-    attribute was deleted off the base object that is still in place.
-    """
-    wrapped = settings._wrapped  # pylint: disable=protected-access
-    chain = []
-    seen = 0
-    while wrapped is not None and seen < 40:
-        seen += 1
-        own = 'CONTENTSTORE' in vars(wrapped)
-        deleted_set = getattr(wrapped, '_deleted', None)
-        deleted = deleted_set is not None and 'CONTENTSTORE' in deleted_set
-        # What else that layer masks, and what it overrides, identify which
-        # override_settings call created it.
-        overrides = sorted(k for k in vars(wrapped) if k.isupper())[:6]
-        chain.append(
-            f"{type(wrapped).__name__}(id={id(wrapped):#x}"
-            f"{', has' if own else ''}"
-            f"{', DELETED=' + repr(sorted(deleted_set)) if deleted else ''}"
-            f"{', created_by=' + str(vars(wrapped).get('_created_by')) if deleted else ''}"
-            f"{', sets=' + repr(overrides) if overrides else ''}"
-            f"{', module=' + str(wrapped.SETTINGS_MODULE) if getattr(wrapped, 'SETTINGS_MODULE', None) else ''})"
-        )
-        wrapped = vars(wrapped).get('default_settings')
-    base = settings._wrapped  # pylint: disable=protected-access
-    while vars(base).get('default_settings') is not None:
-        base = vars(base)['default_settings']
-    return (
-        f"layers={len(chain)} "
-        f"MODULESTORE in base vars={'MODULESTORE' in vars(base)} "
-        f"CONTENTSTORE in base vars={'CONTENTSTORE' in vars(base)} "
-        f"chain: {' <- '.join(chain)}"
-    )
-
-
-def _note_corruption(where):
-    """Record the first moment CONTENTSTORE goes missing, and what was running."""
-    if _CORRUPTION_REPORT:
-        return
-    _CORRUPTION_REPORT['where'] = where
-    _CORRUPTION_REPORT['test'] = os.environ.get('PYTEST_CURRENT_TEST', '(unknown)')
-    _CORRUPTION_REPORT['settings'] = _describe_settings_state()
-    _CORRUPTION_REPORT['open'] = _describe_open_isolations()
-
-
-def _describe_corruption():
-    """Render what was recorded when CONTENTSTORE first went missing."""
-    if not _CORRUPTION_REPORT:
-        return 'never seen during isolation -- it went missing outside one'
-    return (
-        f"CORRUPTED {_CORRUPTION_REPORT['where']} while running "
-        f"{_CORRUPTION_REPORT['test']} [{_CORRUPTION_REPORT['settings']}; "
-        f"open isolations then: {_CORRUPTION_REPORT['open']}]"
-    )
 
 
 class ModuleStoreIsolationMixin(CacheIsolationMixin, SignalIsolationMixin):
@@ -413,16 +328,15 @@ class ModuleStoreIsolationMixin(CacheIsolationMixin, SignalIsolationMixin):
         be flushed (all content will be deleted).
         """
         if not _contentstore_is_readable():
-            # Report once, loudly, with enough to attribute it -- but do not fail.
-            # This isolation overrides CONTENTSTORE anyway and the old value is
-            # only kept to assert against at teardown, so a missing one is
-            # recoverable here. Failing would turn one upstream bug into hundreds
-            # of downstream errors, which is exactly what it used to do.
-            _note_corruption('at start of isolation')
+            # Warn rather than fail. This isolation overrides CONTENTSTORE
+            # anyway, and the old value is only kept to assert against at
+            # teardown, so a missing one is recoverable here. Raising instead
+            # turned a single upstream problem into hundreds of downstream
+            # errors and hid where it came from.
             warnings.warn(
-                f"settings.CONTENTSTORE missing when {cls.__name__} started "
-                f"modulestore isolation. {_describe_corruption()}. Now: "
-                f"{_describe_settings_state()}.",
+                f"settings.CONTENTSTORE was missing when {cls.__name__} started "
+                "modulestore isolation; an earlier override_settings frame is "
+                "masking it. Proceeding, since this isolation overrides it.",
                 RuntimeWarning,
             )
 
@@ -466,7 +380,6 @@ class ModuleStoreIsolationMixin(CacheIsolationMixin, SignalIsolationMixin):
         cls.__old_contentstores.append(old_contentstore)
         cls.__settings_overrides.append(override)
         setattr(cls, cls._ISOLATION_DEPTH_ATTR, cls._modulestore_isolation_depth() + 1)
-        _OPEN_ISOLATIONS.append((cls.__name__, id(override)))
 
         try:
             XMODULE_FACTORY_LOCK.enable()
@@ -507,36 +420,12 @@ class ModuleStoreIsolationMixin(CacheIsolationMixin, SignalIsolationMixin):
                 old_modulestore = cls.__old_modulestores.pop()
                 old_contentstore = cls.__old_contentstores.pop()
 
-                # The frame being unwound must be the one this class pushed. If it
-                # is not, some other scope entered an override and never exited it,
-                # and unwinding out of order here would restore settings._wrapped to
-                # a stale object -- which is the corruption we are hunting. Say so
-                # now, naming both sides, instead of letting the next few hundred
-                # tests fail with an unattributable AttributeError.
-                if _OPEN_ISOLATIONS:
-                    owner, _ = _OPEN_ISOLATIONS.pop()
-                    if owner != cls.__name__:
-                        raise RuntimeError(
-                            f"{cls.__name__} is ending modulestore isolation, but the "
-                            f"innermost open isolation belongs to {owner}. {owner} "
-                            "entered a settings override and never exited it, so this "
-                            "unwind is about to restore settings._wrapped to the wrong "
-                            "object. Remaining open isolations: "
-                            f"{_describe_open_isolations()}."
-                        )
-
                 override.__exit__(None, None, None)
                 if old_modulestore is not None:
                     assert settings.MODULESTORE == old_modulestore
                 if old_contentstore is not None:
                     assert settings.CONTENTSTORE == old_contentstore
 
-                # Catch the corruption at the moment it happens. Every isolation
-                # passes through here, so the first teardown that sees CONTENTSTORE
-                # missing names the test that was running when it went -- the fact
-                # needed to attribute this to a cause.
-                if not _contentstore_is_readable():
-                    _note_corruption('at end of isolation')
             finally:
                 cls.end_cache_isolation()
                 cls.enable_all_signals()

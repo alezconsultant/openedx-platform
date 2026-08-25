@@ -164,3 +164,8 @@ pii_report
 
 # Pyenv Python version file
 .python-version
+
+# Local scratch/repro files kept in the working tree; never part of a commit.
+/mitxodl_backends.py
+**/test_repro_hq*.py
+**/tests/test_h1_validation.py

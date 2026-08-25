@@ -4,7 +4,6 @@ Module to put all pytest hooks that modify pytest behaviour
 import io  # pylint: disable=unused-import  # noqa: F401
 import json
 import os
-import sys
 
 
 def pytest_json_modifyreport(json_report):
@@ -86,87 +85,3 @@ class DeferPlugin:
 def pytest_configure(config):
     if config.pluginmanager.hasplugin("pytest_jsonreport") or config.pluginmanager.hasplugin("json-report"):
         config.pluginmanager.register(DeferPlugin())
-
-# --- temporary diagnostic -------------------------------------------------
-# Something removes settings.CONTENTSTORE from the base Settings object partway
-# through a run (transiently -- it comes back), which breaks any test that reads
-# it, including plain TestCases like SandboxServiceTest that call contentstore().
-# The attribute is gone from the base object's own __dict__ while the object's
-# identity is unchanged, so it is a delete rather than a settings reload. This
-# traces the delete to its caller. Remove once the cause is fixed.
-
-_DELETION_TRACER_INSTALLED = False
-
-
-def install_settings_deletion_tracer(*names):
-    """Log a stack trace whenever one of `names` is deleted off a settings object."""
-    global _DELETION_TRACER_INSTALLED  # noqa: PLW0603
-    if _DELETION_TRACER_INSTALLED:
-        return
-    _DELETION_TRACER_INSTALLED = True
-
-    import sys  # pylint: disable=import-outside-toplevel
-    import traceback  # pylint: disable=import-outside-toplevel
-
-    from django.conf import Settings, UserSettingsHolder  # pylint: disable=import-outside-toplevel
-
-    watched = set(names)
-
-    def _wrap(owner, original):
-        def __delattr__(self, name):  # noqa: N807
-            if name in watched:
-                sys.stderr.write(
-                    f"\n=== SETTINGS-DELETE {name} on {owner.__name__} id={id(self):#x} "
-                    f"test={os.environ.get('PYTEST_CURRENT_TEST', '?')} ===\n"
-                    + "".join(traceback.format_stack()[-14:-1])
-                    + "=== end SETTINGS-DELETE ===\n"
-                )
-                sys.stderr.flush()
-            return original(self, name)
-        return __delattr__
-
-    Settings.__delattr__ = _wrap(Settings, Settings.__delattr__)
-    UserSettingsHolder.__delattr__ = _wrap(UserSettingsHolder, UserSettingsHolder.__delattr__)
-
-    # Record where each holder was created. A leaked override frame is only
-    # actionable if we can name the override_settings call that made it, and the
-    # holder itself carries no such information. sys._getframe rather than
-    # traceback.extract_stack because this runs on every override in the suite.
-    original_init = UserSettingsHolder.__init__
-
-    def _tracking_init(self, default_settings):
-        original_init(self, default_settings)
-        origin = "?"
-        try:
-            frame = sys._getframe(1)  # noqa: SLF001  # pylint: disable=protected-access
-            for _ in range(15):
-                if frame is None:
-                    break
-                filename = frame.f_code.co_filename
-                if "/django/" not in filename:
-                    origin = f"{'/'.join(filename.rsplit('/', 3)[-3:])}:{frame.f_lineno}"
-                    break
-                frame = frame.f_back
-        except Exception:  # pylint: disable=broad-except  # noqa: BLE001
-            pass
-        self.__dict__["_created_by"] = origin
-
-    UserSettingsHolder.__init__ = _tracking_init
-
-    # Is the setting already gone before any test has run? That single fact
-    # splits the search space: present here means a test removes it later and the
-    # wrappers above will catch that; absent here means it never survived Django
-    # setup, and no test is involved at all.
-    from django.conf import settings as _settings  # pylint: disable=import-outside-toplevel
-    state = {}
-    for name in watched:
-        try:
-            getattr(_settings, name)
-            state[name] = "present"
-        except AttributeError:
-            state[name] = "ALREADY-MISSING"
-    sys.stderr.write(
-        f"=== SETTINGS-DELETE tracer installed for {sorted(watched)}; "
-        f"at install: {state}; module={_settings.SETTINGS_MODULE} ===\n"
-    )
-    sys.stderr.flush()
