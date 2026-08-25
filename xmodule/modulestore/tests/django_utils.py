@@ -260,6 +260,13 @@ class SignalIsolationMixin:
             signal.enable()
 
 
+# Names of the classes that currently hold modulestore isolation, innermost last.
+# Diagnostics only: when the settings override stack gets corrupted, the test that
+# trips over it is rarely the one that broke it, so knowing who still holds an
+# isolation is what actually points at the leak.
+_OPEN_ISOLATIONS = []
+
+
 class ModuleStoreIsolationMixin(CacheIsolationMixin, SignalIsolationMixin):
     """
     A mixin to be used by TestCases that want to isolate their use of the
@@ -317,6 +324,18 @@ class ModuleStoreIsolationMixin(CacheIsolationMixin, SignalIsolationMixin):
         :py:meth:`end_modulestore_isolation` is called, this modulestore will
         be flushed (all content will be deleted).
         """
+        try:
+            settings.CONTENTSTORE  # pylint: disable=pointless-statement
+        except AttributeError:
+            raise RuntimeError(  # noqa: B904
+                "settings.CONTENTSTORE is unreadable before starting modulestore "
+                f"isolation for {cls.__name__}. The settings override stack was "
+                "corrupted by an earlier test, not by this one -- an override was "
+                "entered and never exited, so settings has been rewound past the "
+                "modulestore overrides. Isolations still open: "
+                f"{_OPEN_ISOLATIONS or '(none)'}."
+            )
+
         cls.disable_all_signals()
         cls.enable_signals_by_name(*cls.ENABLED_SIGNALS)
         cls.start_cache_isolation()
@@ -338,6 +357,7 @@ class ModuleStoreIsolationMixin(CacheIsolationMixin, SignalIsolationMixin):
         cls.__old_contentstores.append(old_contentstore)
         cls.__settings_overrides.append(override)
         setattr(cls, cls._ISOLATION_DEPTH_ATTR, cls._modulestore_isolation_depth() + 1)
+        _OPEN_ISOLATIONS.append(cls.__name__)
 
         try:
             XMODULE_FACTORY_LOCK.enable()
@@ -360,15 +380,31 @@ class ModuleStoreIsolationMixin(CacheIsolationMixin, SignalIsolationMixin):
         if cls._modulestore_isolation_depth() <= 0:
             return
         setattr(cls, cls._ISOLATION_DEPTH_ATTR, cls._modulestore_isolation_depth() - 1)
+        if _OPEN_ISOLATIONS:
+            _OPEN_ISOLATIONS.pop()
 
-        drop_mongo_collections()  # pylint: disable=no-value-for-parameter
-        XMODULE_FACTORY_LOCK.disable()
-        cls.__settings_overrides.pop().__exit__(None, None, None)
-
-        assert settings.MODULESTORE == cls.__old_modulestores.pop()
-        assert settings.CONTENTSTORE == cls.__old_contentstores.pop()
-        cls.end_cache_isolation()
-        cls.enable_all_signals()
+        # Everything below must run even if an earlier step raises. Unwinding the
+        # settings override is the part that matters: an override_settings object
+        # is single-use (Django's disable() does `del self.wrapped`), so a frame
+        # that is skipped here can never be unwound later, and every subsequent
+        # test in this process reads a settings object that has been rewound past
+        # the modulestore overrides. drop_mongo_collections() in particular can
+        # fail under load, which is how one bad teardown used to poison a whole
+        # xdist worker.
+        try:
+            drop_mongo_collections()  # pylint: disable=no-value-for-parameter
+        finally:
+            try:
+                XMODULE_FACTORY_LOCK.disable()
+                override = cls.__settings_overrides.pop()
+                old_modulestore = cls.__old_modulestores.pop()
+                old_contentstore = cls.__old_contentstores.pop()
+                override.__exit__(None, None, None)
+                assert settings.MODULESTORE == old_modulestore
+                assert settings.CONTENTSTORE == old_contentstore
+            finally:
+                cls.end_cache_isolation()
+                cls.enable_all_signals()
 
     @staticmethod
     def allow_transaction_exception():
