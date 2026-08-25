@@ -741,6 +741,26 @@ class DjangoFlexPersistenceBackend(MongoPersistenceBackend):
         # Also write to MongoDB, so we can switch back to using it if this new MySQL version doesn't work well.
         # NOTE: This is REQUIRED for pruning (structures.py) to run safely. Don't remove this write until
         # pruning is modified to read from SplitModulestoreCourseIndex to get active versions.
+        #
+        # First clear any stale MongoDB doc for this course. MySQL is the source of truth for which courses
+        # exist, and new_index.save() above has already succeeded, so we know no MySQL row existed for this
+        # key; any MongoDB doc for it is therefore stale. Such a doc is left behind whenever an earlier
+        # request got this far and then had its MySQL transaction rolled back, because MongoDB writes are
+        # not covered by ATOMIC_REQUESTS. Without this cleanup, the insert below raises DuplicateKeyError
+        # against the UNIQUE(org, course, run) index on active_versions and the course can never be created
+        # again -- every retry fails identically, and the rollback leaves no MySQL trace to explain why.
+        stale_docs = self.course_index.delete_many({
+            'org': course_index['org'],
+            'course': course_index['course'],
+            'run': course_index['run'],
+        }).deleted_count
+        if stale_docs:
+            log.warning(
+                "Removed %d stale MongoDB active_versions doc(s) for %s/%s/%s which had no "
+                "SplitModulestoreCourseIndex row. This usually means an earlier attempt to create this "
+                "course wrote to MongoDB and then had its MySQL transaction rolled back.",
+                stale_docs, course_index['org'], course_index['course'], course_index['run'],
+            )
         super().insert_course_index(course_index, course_context)
 
     def update_course_index(self, course_index, from_index=None, course_context=None):  # pylint: disable=arguments-differ
