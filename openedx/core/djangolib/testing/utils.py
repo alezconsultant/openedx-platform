@@ -96,6 +96,15 @@ class CacheIsolationMixin:
     __settings_overrides = []
     __old_settings = []
 
+    # Number of cache isolations this exact class currently has open. Read from
+    # cls.__dict__ so subclasses never see (or decrement) a parent's count.
+    _CACHE_ISOLATION_DEPTH_ATTR = '_cache_isolation_depth_count'
+
+    @classmethod
+    def _cache_isolation_depth(cls):
+        """How many cache isolations this exact class currently has open."""
+        return cls.__dict__.get(cls._CACHE_ISOLATION_DEPTH_ATTR, 0)
+
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -151,6 +160,7 @@ class CacheIsolationMixin:
         override = override_settings(CACHES=cache_settings)
         override.__enter__()  # pylint: disable=unnecessary-dunder-call
         cls.__settings_overrides.append(override)
+        setattr(cls, cls._CACHE_ISOLATION_DEPTH_ATTR, cls._cache_isolation_depth() + 1)
 
         assert settings.CACHES == cache_settings
 
@@ -165,6 +175,15 @@ class CacheIsolationMixin:
         """
         # Make sure that cache contents don't leak out after the isolation is ended
         cls.clear_caches()
+
+        # Only unwind what this exact class pushed. The stacks below are shared
+        # by every subclass, so an unguarded pop can take another class's
+        # override off the stack -- and override_settings.__exit__ restores
+        # settings._wrapped to the value *that* frame captured, silently
+        # discarding every override layered above it.
+        if cls._cache_isolation_depth() <= 0:
+            return
+        setattr(cls, cls._CACHE_ISOLATION_DEPTH_ATTR, cls._cache_isolation_depth() - 1)
 
         if cls.__settings_overrides:
             cls.__settings_overrides.pop().__exit__(None, None, None)

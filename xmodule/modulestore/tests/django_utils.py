@@ -300,6 +300,16 @@ class ModuleStoreIsolationMixin(CacheIsolationMixin, SignalIsolationMixin):
     __old_modulestores = []
     __old_contentstores = []
 
+    # Number of isolations this exact class currently has open. Read from
+    # cls.__dict__ rather than as a normal attribute so that subclasses never
+    # see (and never decrement) a parent's count.
+    _ISOLATION_DEPTH_ATTR = '_modulestore_isolation_depth_count'
+
+    @classmethod
+    def _modulestore_isolation_depth(cls):
+        """How many isolations this exact class currently has open."""
+        return cls.__dict__.get(cls._ISOLATION_DEPTH_ATTR, 0)
+
     @classmethod
     def start_modulestore_isolation(cls):
         """
@@ -315,13 +325,27 @@ class ModuleStoreIsolationMixin(CacheIsolationMixin, SignalIsolationMixin):
             CONTENTSTORE=cls.CONTENTSTORE(),
         )
 
-        cls.__old_modulestores.append(copy.deepcopy(settings.MODULESTORE))
-        cls.__old_contentstores.append(copy.deepcopy(settings.CONTENTSTORE))
+        old_modulestore = copy.deepcopy(settings.MODULESTORE)
+        old_contentstore = copy.deepcopy(settings.CONTENTSTORE)
         override.__enter__()  # pylint: disable=unnecessary-dunder-call
+
+        # settings is global and now mutated. Record the isolation before doing
+        # anything else that can raise, so that a failure below is still
+        # unwindable; otherwise the override leaks for the rest of the process
+        # and every later start_modulestore_isolation() reads a settings object
+        # whose CONTENTSTORE has been restored away.
+        cls.__old_modulestores.append(old_modulestore)
+        cls.__old_contentstores.append(old_contentstore)
         cls.__settings_overrides.append(override)
-        XMODULE_FACTORY_LOCK.enable()
-        clear_existing_modulestores()
-        cls.store = modulestore()
+        setattr(cls, cls._ISOLATION_DEPTH_ATTR, cls._modulestore_isolation_depth() + 1)
+
+        try:
+            XMODULE_FACTORY_LOCK.enable()
+            clear_existing_modulestores()
+            cls.store = modulestore()
+        except Exception:
+            cls.end_modulestore_isolation()
+            raise
 
     @classmethod
     def end_modulestore_isolation(cls):
@@ -329,7 +353,14 @@ class ModuleStoreIsolationMixin(CacheIsolationMixin, SignalIsolationMixin):
         Delete all content in the Modulestore, and reset the Modulestore
         settings from before :py:meth:`start_modulestore_isolation` was
         called.
+
+        Does nothing if this class has no isolation open, so that it is safe to
+        call both from an explicit tearDownClass and from a registered cleanup.
         """
+        if cls._modulestore_isolation_depth() <= 0:
+            return
+        setattr(cls, cls._ISOLATION_DEPTH_ATTR, cls._modulestore_isolation_depth() - 1)
+
         drop_mongo_collections()  # pylint: disable=no-value-for-parameter
         XMODULE_FACTORY_LOCK.disable()
         cls.__settings_overrides.pop().__exit__(None, None, None)
@@ -458,10 +489,16 @@ class SharedModuleStoreTestCase(
             <these models can use variables (courses) setup in setUpClass() above>
         """
         cls.start_modulestore_isolation()
-        # Now yield to allow the test class to run its setUpClass() setup code.
-        yield
-        # Now call the base class, which calls back into the test class's setUpTestData().
-        super().setUpClass()
+        try:
+            # Now yield to allow the test class to run its setUpClass() setup code.
+            yield
+            # Now call the base class, which calls back into the test class's setUpTestData().
+            super().setUpClass()
+        except Exception:
+            # unittest skips tearDownClass when setUpClass raises, so without this
+            # the isolation above would leak into every later class in the process.
+            cls.end_modulestore_isolation()
+            raise
 
     @classmethod
     def setUpClass(cls):
@@ -471,6 +508,11 @@ class SharedModuleStoreTestCase(
         """
         super().setUpClass()
         cls.start_modulestore_isolation()
+        # tearDownClass is skipped entirely when a subclass's setUpClass raises
+        # after this point; a class cleanup still runs, so register one as a
+        # backstop. end_modulestore_isolation() is a no-op once the isolation
+        # has already been ended, so the normal path is unaffected.
+        cls.addClassCleanup(cls.end_modulestore_isolation)
 
     @classmethod
     def tearDownClass(cls):
