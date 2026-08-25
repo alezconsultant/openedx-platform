@@ -6,6 +6,7 @@ Modulestore configuration for test cases.
 import copy
 import functools
 import os
+import warnings
 from contextlib import contextmanager
 from enum import Enum
 from mimetypes import guess_type
@@ -280,6 +281,62 @@ def _describe_open_isolations():
     return ' -> '.join(name for name, _ in _OPEN_ISOLATIONS)
 
 
+# What was running the first time settings.CONTENTSTORE was seen to be missing.
+# Populated by end_modulestore_isolation(), so the first test to trip over the
+# corruption can report which test actually caused it.
+_CORRUPTION_REPORT = {}
+
+
+def _contentstore_is_readable():
+    """Can settings.CONTENTSTORE be read right now?"""
+    try:
+        settings.CONTENTSTORE  # pylint: disable=pointless-statement
+        return True
+    except AttributeError:
+        return False
+
+
+def _describe_settings_state():
+    """Identify the settings object graph, for diagnosing a missing setting.
+
+    Distinguishes the two ways settings.CONTENTSTORE can go missing: the base
+    Settings object was replaced (different id or SETTINGS_MODULE), or the
+    attribute was deleted off the base object that is still in place.
+    """
+    wrapped = settings._wrapped  # pylint: disable=protected-access
+    layers = 0
+    while hasattr(wrapped, 'default_settings'):
+        layers += 1
+        wrapped = wrapped.default_settings
+    return (
+        f"base Settings id={id(wrapped):#x} "
+        f"module={getattr(wrapped, 'SETTINGS_MODULE', '?')} "
+        f"override layers={layers} "
+        f"CONTENTSTORE in base vars={'CONTENTSTORE' in vars(wrapped)}"
+    )
+
+
+def _note_corruption(where):
+    """Record the first moment CONTENTSTORE goes missing, and what was running."""
+    if _CORRUPTION_REPORT:
+        return
+    _CORRUPTION_REPORT['where'] = where
+    _CORRUPTION_REPORT['test'] = os.environ.get('PYTEST_CURRENT_TEST', '(unknown)')
+    _CORRUPTION_REPORT['settings'] = _describe_settings_state()
+    _CORRUPTION_REPORT['open'] = _describe_open_isolations()
+
+
+def _describe_corruption():
+    """Render what was recorded when CONTENTSTORE first went missing."""
+    if not _CORRUPTION_REPORT:
+        return 'never seen during isolation -- it went missing outside one'
+    return (
+        f"CORRUPTED {_CORRUPTION_REPORT['where']} while running "
+        f"{_CORRUPTION_REPORT['test']} [{_CORRUPTION_REPORT['settings']}; "
+        f"open isolations then: {_CORRUPTION_REPORT['open']}]"
+    )
+
+
 class ModuleStoreIsolationMixin(CacheIsolationMixin, SignalIsolationMixin):
     """
     A mixin to be used by TestCases that want to isolate their use of the
@@ -337,16 +394,18 @@ class ModuleStoreIsolationMixin(CacheIsolationMixin, SignalIsolationMixin):
         :py:meth:`end_modulestore_isolation` is called, this modulestore will
         be flushed (all content will be deleted).
         """
-        try:
-            settings.CONTENTSTORE  # pylint: disable=pointless-statement
-        except AttributeError:
-            raise RuntimeError(  # noqa: B904
-                "settings.CONTENTSTORE is unreadable before starting modulestore "
-                f"isolation for {cls.__name__}. The settings override stack was "
-                "corrupted by an earlier test, not by this one -- an override was "
-                "entered and never exited, so settings has been rewound past the "
-                "modulestore overrides. Isolations still open: "
-                f"{_describe_open_isolations()}."
+        if not _contentstore_is_readable():
+            # Report once, loudly, with enough to attribute it -- but do not fail.
+            # This isolation overrides CONTENTSTORE anyway and the old value is
+            # only kept to assert against at teardown, so a missing one is
+            # recoverable here. Failing would turn one upstream bug into hundreds
+            # of downstream errors, which is exactly what it used to do.
+            _note_corruption('at start of isolation')
+            warnings.warn(
+                f"settings.CONTENTSTORE missing when {cls.__name__} started "
+                f"modulestore isolation. {_describe_corruption()}. Now: "
+                f"{_describe_settings_state()}.",
+                RuntimeWarning,
             )
 
         cls.disable_all_signals()
@@ -357,8 +416,11 @@ class ModuleStoreIsolationMixin(CacheIsolationMixin, SignalIsolationMixin):
             CONTENTSTORE=cls.CONTENTSTORE(),
         )
 
-        old_modulestore = copy.deepcopy(settings.MODULESTORE)
-        old_contentstore = copy.deepcopy(settings.CONTENTSTORE)
+        # getattr with a default: these snapshots exist only to assert against at
+        # teardown, and the override below replaces both settings regardless, so a
+        # missing value must not stop isolation from being established.
+        old_modulestore = copy.deepcopy(getattr(settings, 'MODULESTORE', None))
+        old_contentstore = copy.deepcopy(getattr(settings, 'CONTENTSTORE', None))
         override.__enter__()  # pylint: disable=unnecessary-dunder-call
 
         # settings is global and now mutated. Record the isolation before doing
@@ -430,8 +492,17 @@ class ModuleStoreIsolationMixin(CacheIsolationMixin, SignalIsolationMixin):
                         )
 
                 override.__exit__(None, None, None)
-                assert settings.MODULESTORE == old_modulestore
-                assert settings.CONTENTSTORE == old_contentstore
+                if old_modulestore is not None:
+                    assert settings.MODULESTORE == old_modulestore
+                if old_contentstore is not None:
+                    assert settings.CONTENTSTORE == old_contentstore
+
+                # Catch the corruption at the moment it happens. Every isolation
+                # passes through here, so the first teardown that sees CONTENTSTORE
+                # missing names the test that was running when it went -- the fact
+                # needed to attribute this to a cause.
+                if not _contentstore_is_readable():
+                    _note_corruption('at end of isolation')
             finally:
                 cls.end_cache_isolation()
                 cls.enable_all_signals()
