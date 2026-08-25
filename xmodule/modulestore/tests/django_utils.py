@@ -260,11 +260,24 @@ class SignalIsolationMixin:
             signal.enable()
 
 
-# Names of the classes that currently hold modulestore isolation, innermost last.
-# Diagnostics only: when the settings override stack gets corrupted, the test that
-# trips over it is rarely the one that broke it, so knowing who still holds an
-# isolation is what actually points at the leak.
+# Modulestore isolations currently open, innermost last, as
+# (class name, id(override_settings object)) pairs.
+#
+# Diagnostics only, but load-bearing ones: when the settings override stack gets
+# corrupted the test that trips over it is never the one that broke it, so the
+# only useful question is who entered an override and never exited it. Frames are
+# matched on the identity of the override object rather than popped blindly,
+# because class-scoped and test-scoped isolation nest -- popping the last entry
+# regardless of owner silently desynchronises the register and makes it name
+# innocent classes.
 _OPEN_ISOLATIONS = []
+
+
+def _describe_open_isolations():
+    """Render the open isolations for an error message, innermost last."""
+    if not _OPEN_ISOLATIONS:
+        return '(none)'
+    return ' -> '.join(name for name, _ in _OPEN_ISOLATIONS)
 
 
 class ModuleStoreIsolationMixin(CacheIsolationMixin, SignalIsolationMixin):
@@ -333,7 +346,7 @@ class ModuleStoreIsolationMixin(CacheIsolationMixin, SignalIsolationMixin):
                 "corrupted by an earlier test, not by this one -- an override was "
                 "entered and never exited, so settings has been rewound past the "
                 "modulestore overrides. Isolations still open: "
-                f"{_OPEN_ISOLATIONS or '(none)'}."
+                f"{_describe_open_isolations()}."
             )
 
         cls.disable_all_signals()
@@ -357,7 +370,7 @@ class ModuleStoreIsolationMixin(CacheIsolationMixin, SignalIsolationMixin):
         cls.__old_contentstores.append(old_contentstore)
         cls.__settings_overrides.append(override)
         setattr(cls, cls._ISOLATION_DEPTH_ATTR, cls._modulestore_isolation_depth() + 1)
-        _OPEN_ISOLATIONS.append(cls.__name__)
+        _OPEN_ISOLATIONS.append((cls.__name__, id(override)))
 
         try:
             XMODULE_FACTORY_LOCK.enable()
@@ -380,8 +393,6 @@ class ModuleStoreIsolationMixin(CacheIsolationMixin, SignalIsolationMixin):
         if cls._modulestore_isolation_depth() <= 0:
             return
         setattr(cls, cls._ISOLATION_DEPTH_ATTR, cls._modulestore_isolation_depth() - 1)
-        if _OPEN_ISOLATIONS:
-            _OPEN_ISOLATIONS.pop()
 
         # Everything below must run even if an earlier step raises. Unwinding the
         # settings override is the part that matters: an override_settings object
@@ -399,6 +410,25 @@ class ModuleStoreIsolationMixin(CacheIsolationMixin, SignalIsolationMixin):
                 override = cls.__settings_overrides.pop()
                 old_modulestore = cls.__old_modulestores.pop()
                 old_contentstore = cls.__old_contentstores.pop()
+
+                # The frame being unwound must be the one this class pushed. If it
+                # is not, some other scope entered an override and never exited it,
+                # and unwinding out of order here would restore settings._wrapped to
+                # a stale object -- which is the corruption we are hunting. Say so
+                # now, naming both sides, instead of letting the next few hundred
+                # tests fail with an unattributable AttributeError.
+                if _OPEN_ISOLATIONS:
+                    owner, _ = _OPEN_ISOLATIONS.pop()
+                    if owner != cls.__name__:
+                        raise RuntimeError(
+                            f"{cls.__name__} is ending modulestore isolation, but the "
+                            f"innermost open isolation belongs to {owner}. {owner} "
+                            "entered a settings override and never exited it, so this "
+                            "unwind is about to restore settings._wrapped to the wrong "
+                            "object. Remaining open isolations: "
+                            f"{_describe_open_isolations()}."
+                        )
+
                 override.__exit__(None, None, None)
                 assert settings.MODULESTORE == old_modulestore
                 assert settings.CONTENTSTORE == old_contentstore
