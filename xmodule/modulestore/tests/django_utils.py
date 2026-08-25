@@ -318,6 +318,7 @@ def _describe_settings_state():
             f"{type(wrapped).__name__}(id={id(wrapped):#x}"
             f"{', has' if own else ''}"
             f"{', DELETED=' + repr(sorted(deleted_set)) if deleted else ''}"
+            f"{', created_by=' + str(vars(wrapped).get('_created_by')) if deleted else ''}"
             f"{', sets=' + repr(overrides) if overrides else ''}"
             f"{', module=' + str(wrapped.SETTINGS_MODULE) if getattr(wrapped, 'SETTINGS_MODULE', None) else ''})"
         )

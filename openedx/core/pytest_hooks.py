@@ -4,6 +4,7 @@ Module to put all pytest hooks that modify pytest behaviour
 import io  # pylint: disable=unused-import  # noqa: F401
 import json
 import os
+import sys
 
 
 def pytest_json_modifyreport(json_report):
@@ -126,5 +127,31 @@ def install_settings_deletion_tracer(*names):
 
     Settings.__delattr__ = _wrap(Settings, Settings.__delattr__)
     UserSettingsHolder.__delattr__ = _wrap(UserSettingsHolder, UserSettingsHolder.__delattr__)
+
+    # Record where each holder was created. A leaked override frame is only
+    # actionable if we can name the override_settings call that made it, and the
+    # holder itself carries no such information. sys._getframe rather than
+    # traceback.extract_stack because this runs on every override in the suite.
+    original_init = UserSettingsHolder.__init__
+
+    def _tracking_init(self, default_settings):
+        original_init(self, default_settings)
+        origin = "?"
+        try:
+            frame = sys._getframe(1)  # noqa: SLF001  # pylint: disable=protected-access
+            for _ in range(15):
+                if frame is None:
+                    break
+                filename = frame.f_code.co_filename
+                if "/django/" not in filename:
+                    origin = f"{'/'.join(filename.rsplit('/', 3)[-3:])}:{frame.f_lineno}"
+                    break
+                frame = frame.f_back
+        except Exception:  # pylint: disable=broad-except  # noqa: BLE001
+            pass
+        self.__dict__["_created_by"] = origin
+
+    UserSettingsHolder.__init__ = _tracking_init
+
     sys.stderr.write(f"=== SETTINGS-DELETE tracer installed for {sorted(watched)} ===\n")
     sys.stderr.flush()
