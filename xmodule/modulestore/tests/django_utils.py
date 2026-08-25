@@ -309,11 +309,16 @@ def _describe_settings_state():
     while wrapped is not None and seen < 40:
         seen += 1
         own = 'CONTENTSTORE' in vars(wrapped)
-        deleted = 'CONTENTSTORE' in getattr(wrapped, '_deleted', ())
+        deleted_set = getattr(wrapped, '_deleted', None)
+        deleted = deleted_set is not None and 'CONTENTSTORE' in deleted_set
+        # What else that layer masks, and what it overrides, identify which
+        # override_settings call created it.
+        overrides = sorted(k for k in vars(wrapped) if k.isupper())[:6]
         chain.append(
             f"{type(wrapped).__name__}(id={id(wrapped):#x}"
             f"{', has' if own else ''}"
-            f"{', DELETED' if deleted else ''}"
+            f"{', DELETED=' + repr(sorted(deleted_set)) if deleted else ''}"
+            f"{', sets=' + repr(overrides) if overrides else ''}"
             f"{', module=' + str(wrapped.SETTINGS_MODULE) if getattr(wrapped, 'SETTINGS_MODULE', None) else ''})"
         )
         wrapped = vars(wrapped).get('default_settings')

@@ -126,3 +126,5 @@ def install_settings_deletion_tracer(*names):
 
     Settings.__delattr__ = _wrap(Settings, Settings.__delattr__)
     UserSettingsHolder.__delattr__ = _wrap(UserSettingsHolder, UserSettingsHolder.__delattr__)
+    sys.stderr.write(f"=== SETTINGS-DELETE tracer installed for {sorted(watched)} ===\n")
+    sys.stderr.flush()
