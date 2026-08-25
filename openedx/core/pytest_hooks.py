@@ -153,5 +153,20 @@ def install_settings_deletion_tracer(*names):
 
     UserSettingsHolder.__init__ = _tracking_init
 
-    sys.stderr.write(f"=== SETTINGS-DELETE tracer installed for {sorted(watched)} ===\n")
+    # Is the setting already gone before any test has run? That single fact
+    # splits the search space: present here means a test removes it later and the
+    # wrappers above will catch that; absent here means it never survived Django
+    # setup, and no test is involved at all.
+    from django.conf import settings as _settings  # pylint: disable=import-outside-toplevel
+    state = {}
+    for name in watched:
+        try:
+            getattr(_settings, name)
+            state[name] = "present"
+        except AttributeError:
+            state[name] = "ALREADY-MISSING"
+    sys.stderr.write(
+        f"=== SETTINGS-DELETE tracer installed for {sorted(watched)}; "
+        f"at install: {state}; module={_settings.SETTINGS_MODULE} ===\n"
+    )
     sys.stderr.flush()
