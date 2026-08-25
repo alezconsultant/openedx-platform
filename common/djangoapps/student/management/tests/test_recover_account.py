@@ -43,8 +43,12 @@ class RecoverAccountTests(TestCase):
         request = self.request_factory.get('/')
         request.site = Site.objects.get_current()
         request.user = self.user
+        previous_request = crum.get_current_request()
         crum.set_current_request(request)
-        self.addCleanup(crum.set_current_request, None)
+        # Restore whatever was there rather than clearing to None: other tests in
+        # this process may be relying on it, and it is not this class's business
+        # to change that -- only to stop depending on it itself.
+        self.addCleanup(crum.set_current_request, previous_request)
 
     def _write_test_csv(self, csv, lines):
         """Write a test csv file with the lines provided"""
