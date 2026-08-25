@@ -82,21 +82,43 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 3
-      mysql:
-        image: mysql:${{ matrix.mysql-version }}
-        ports:
-          - 3306:3306
-        env:
-          MYSQL_DATABASE: "edxapp"
-          MYSQL_USER: "edxapp001"
-          MYSQL_PASSWORD: "password"
-          MYSQL_RANDOM_ROOT_PASSWORD: true
-        options: >-
-          --health-cmd "mysqladmin ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 3
     steps:
+      # MySQL is started by hand rather than as a service because `services:`
+      # cannot pass server flags -- only `docker create` options. The durability
+      # settings below are all safe here: the database is thrown away when the
+      # job ends, so there is nothing to lose on an unclean shutdown, and the
+      # datadir lives in a tmpfs so writes never reach a disk at all. Together
+      # these are worth roughly 2-3x on a DDL-heavy workload like applying
+      # ~1800 migrations.
+      #
+      # A fixed root password (rather than MYSQL_RANDOM_ROOT_PASSWORD) so the
+      # schema-cache fallback below can drop and recreate the database.
+      - name: Start tuned MySQL
+        run: |
+          docker run -d --name mysql -p 3306:3306 \
+            --tmpfs /var/lib/mysql:rw,noexec,nosuid,size=4g \
+            -e MYSQL_DATABASE=edxapp \
+            -e MYSQL_USER=edxapp001 \
+            -e MYSQL_PASSWORD=password \
+            -e MYSQL_ROOT_PASSWORD=rootpw \
+            mysql:${{ matrix.mysql-version }} \
+            --innodb-flush-log-at-trx-commit=0 \
+            --innodb-doublewrite=0 \
+            --sync-binlog=0 \
+            --skip-log-bin \
+            --performance-schema=OFF
+          echo "Waiting for MySQL to accept connections..."
+          for _ in $(seq 1 60); do
+            if docker exec mysql mysqladmin ping -h 127.0.0.1 --silent 2>/dev/null; then
+              echo "MySQL is up."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "MySQL did not become ready in time." >&2
+          docker logs mysql >&2
+          exit 1
+
       - name: Setup mongodb user
         run: |
           docker exec ${{ job.services.mongo.id }} mongosh edxapp --eval '
@@ -142,16 +164,66 @@ jobs:
         run: |
           uv tree
 
+      # Applying every migration from an empty database is ~9 minutes and almost
+      # all of that work is identical between runs. Cache the resulting schema
+      # (including the django_migrations table, which records what has already
+      # been applied) and reload it instead.
+      #
+      # restore-keys matters more than the exact key here: on a PR that adds one
+      # migration the exact key misses, an older schema is restored, and the
+      # migrate below applies only the delta. Both LMS and CMS point at the same
+      # database, so one dump covers both.
+      - name: Restore cached migrated schema
+        uses: actions/cache@v4
+        with:
+          path: migrations-schema.sql
+          key: migschema-${{ matrix.mysql-version }}-${{ matrix.django-version }}-${{ hashFiles('**/migrations/*.py', 'uv.lock') }}
+          restore-keys: |
+            migschema-${{ matrix.mysql-version }}-${{ matrix.django-version }}-
+
       - name: Run Tests
         env:
           LMS_CFG: lms/envs/minimal.yml
           # This is from the LMS dir on purpose since we don't need anything different for the CMS yet.
           STUDIO_CFG: lms/envs/minimal.yml
         run: |
-          echo "Running the LMS migrations."
-          uv run ./manage.py lms migrate
-          echo "Running the CMS migrations."
-          uv run ./manage.py cms migrate
+          set -o pipefail
+
+          load_cached_schema() {
+            if [[ -s migrations-schema.sql ]]; then
+              echo "Restoring cached schema ($(du -h migrations-schema.sql | cut -f1))."
+              docker exec -i mysql mysql -uedxapp001 -ppassword edxapp < migrations-schema.sql
+            else
+              echo "No cached schema; migrating from an empty database."
+            fi
+          }
+
+          reset_database() {
+            docker exec mysql mysql -uroot -prootpw -e "
+              DROP DATABASE IF EXISTS edxapp;
+              CREATE DATABASE edxapp;
+              GRANT ALL ON edxapp.* TO 'edxapp001'@'%';"
+          }
+
+          run_migrations() {
+            uv run ./manage.py lms migrate && uv run ./manage.py cms migrate
+          }
+
+          load_cached_schema
+          if ! run_migrations; then
+            # A restored schema can be unusable -- a migration squashed, renamed
+            # or removed since the dump was taken leaves django_migrations
+            # describing a graph that no longer exists. Fall back to the cold
+            # path rather than reporting a migration failure that is really a
+            # stale cache, which would be indistinguishable from a real break.
+            echo "::warning::Incremental migration failed; retrying from an empty database."
+            reset_database
+            run_migrations
+          fi
+
+          echo "Dumping schema for the next run."
+          docker exec mysql mysqldump -uedxapp001 -ppassword \
+            --no-tablespaces --single-transaction --routines edxapp > migrations-schema.sql
 
   # This job aggregates test results. It's the required check for branch protection.
   # https://github.com/marketplace/actions/alls-green#why
