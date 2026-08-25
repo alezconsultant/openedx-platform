@@ -269,10 +269,11 @@ def _contentstore_is_readable():
     observe whether the lookup succeeds, not what it returns.
     """
     try:
-        getattr(settings, 'CONTENTSTORE')  # noqa: B009
-        return True
+        # The attribute access *is* the probe; both linters need telling.
+        settings.CONTENTSTORE  # noqa: B018  # pylint: disable=pointless-statement
     except AttributeError:
         return False
+    return True
 
 
 class ModuleStoreIsolationMixin(CacheIsolationMixin, SignalIsolationMixin):
