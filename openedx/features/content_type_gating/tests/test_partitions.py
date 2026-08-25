@@ -16,7 +16,15 @@ from xmodule.partitions.partitions import UserPartitionError  # pylint: disable=
 
 
 class TestContentTypeGatingPartition(CacheIsolationTestCase):  # pylint: disable=missing-class-docstring
-    def setUp(self):  # pylint: disable=super-method-not-called
+    def setUp(self):
+        # CacheIsolationTestCase.setUp() is what clears the caches and registers
+        # the cleanup that clears them again. Skipping it opted this class out of
+        # the isolation its base class exists to provide, so ContentTypeGatingConfig
+        # -- a ConfigurationModel, which caches current() -- was answered from
+        # whatever an earlier test had cached. That made
+        # test_create_content_gating_partition_disabled see enabled=True and build
+        # a partition where it asserts None.
+        super().setUp()
         self.course_key = CourseKey.from_string('course-v1:test+course+key')
         CourseOverviewFactory.create(id=self.course_key)
 
