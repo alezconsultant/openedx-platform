@@ -1,20 +1,22 @@
 """
-Fail if any test file is not covered by a unit-test suite.
+Fail if any test file belongs to no shard in unit-test-shards.json.
 
-The suites in .github/workflows/unit-test-suites.json enumerate the paths each
-one runs. That list is maintained by hand -- it cannot simply be the repository
-roots, because a few apps under openedx/ are Studio-only and raise at import
-under lms settings -- so it can drift when a new Django app is added.
+That file is maintained by hand and cannot simply be the repository roots: a few
+apps under openedx/ -- content_staging, content_tagging -- are Studio-only and
+raise at import under lms settings, so the lms and cms shards each cover part of
+the tree rather than either covering all of it. The list therefore drifts when a
+new Django app is added, and a drifting list means tests that silently never run.
 
-This replaces the old collect-and-verify job, which compared test *counts*
-between the shard list and the roots. Comparing the paths directly says which
-directory is missing rather than only that some number disagrees.
+Replaces collect-and-verify, which compared test *counts* between the shard list
+and the roots. That needed every Python dependency and two full pytest
+collections (~2 minutes) to report only that two numbers disagreed. Comparing
+paths reads the file tree in a few seconds and names the directory at fault.
 """
 import json
 import pathlib
 import sys
 
-SUITES_JSON = '.github/workflows/unit-test-suites.json'
+SHARDS_JSON = '.github/workflows/unit-test-shards.json'
 ROOTS = ('lms', 'cms', 'openedx', 'common/djangoapps', 'xmodule')
 TEST_GLOBS = ('test_*.py', 'tests.py', 'tests_*.py', '*_tests.py')
 # Mirrors norecursedirs in pyproject.toml, plus trees that hold fixtures rather
@@ -23,9 +25,9 @@ SKIP = ('node_modules', '/envs/', '/migrations/', 'test_root', '/.git/', '/featu
 
 
 def covered_paths():
-    with open(SUITES_JSON) as suites_file:
-        suites = json.load(suites_file)
-    return tuple({path for suite in suites.values() for path in suite['paths']})
+    with open(SHARDS_JSON) as shards_file:
+        shards = json.load(shards_file)
+    return tuple({path for shard in shards.values() for path in shard['paths']})
 
 
 def find_test_files():
@@ -44,14 +46,14 @@ def main():
         if not f.startswith(prefixes)
     })
     if uncovered:
-        print("::error title=Unit test suites are out of date::"
-              "These directories contain tests that no suite in "
-              f"{SUITES_JSON} covers, so they never run in CI. Add them to the "
-              "lms suite, or to the cms suite if they need Studio settings.")
+        print("::error title=unit-test-shards.json is out of date::"
+              "These directories contain tests that no shard in "
+              f"{SHARDS_JSON} covers, so they never run in CI. Add them to a "
+              "shard -- a cms.envs.test one if they need Studio settings.")
         for directory in uncovered:
             print(f"  {directory}")
         sys.exit(1)
-    print(f"All test files are covered by {len(prefixes)} suite paths.")
+    print(f"All test files are covered by {len(prefixes)} shard paths.")
 
 
 if __name__ == "__main__":
