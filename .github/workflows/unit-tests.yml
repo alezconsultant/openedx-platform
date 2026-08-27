@@ -34,19 +34,20 @@ jobs:
         # hand-listing directories, so these are just group numbers. The two
         # suites exist because their tests need different Django settings and
         # therefore cannot share a process; within a suite the split is even.
-        # Group counts are proportional to measured work: the lms suite is
-        # ~56 machine-minutes, the cms suite ~20.
-        include:
-          - { suite: lms, group: 1 }
-          - { suite: lms, group: 2 }
-          - { suite: lms, group: 3 }
-          - { suite: lms, group: 4 }
-          - { suite: lms, group: 5 }
-          - { suite: lms, group: 6 }
-          - { suite: lms, group: 7 }
-          - { suite: cms, group: 1 }
-          - { suite: cms, group: 2 }
-          - { suite: cms, group: 3 }
+        #
+        # Group counts are proportional to measured work -- the lms suite is
+        # ~104 serial minutes, the cms suite ~35 -- so lms gets 7 groups and cms
+        # 3. That is expressed as a 2x7 matrix with cms 4-7 excluded rather than
+        # as `include` entries: an `include` whose keys are absent from the base
+        # matrix is merged into the existing combinations instead of adding new
+        # ones, which collapses all ten into a single job.
+        suite: [lms, cms]
+        group: [1, 2, 3, 4, 5, 6, 7]
+        exclude:
+          - { suite: cms, group: 4 }
+          - { suite: cms, group: 5 }
+          - { suite: cms, group: 6 }
+          - { suite: cms, group: 7 }
     steps:
       - name: checkout repo
         uses: actions/checkout@v7
