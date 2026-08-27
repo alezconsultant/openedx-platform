@@ -165,6 +165,18 @@ jobs:
           path: reports/${{ matrix.suite }}-${{ matrix.group }}_${{ matrix.python-version }}_${{ matrix.django-version }}_${{ matrix.mongo-version }}_${{ matrix.os-version }}.coverage
           overwrite: true
 
+  verify-suite-coverage:
+    name: verify test suite coverage
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      # Replaces the old collect-and-verify job. That one installed every
+      # dependency and ran two full pytest collections just to compare test
+      # counts, which took ~2 minutes; this reads the file tree and needs
+      # neither Python dependencies nor a database.
+      - name: check every test directory belongs to a suite
+        run: python3 scripts/verify_test_suite_coverage.py
+
   # This job aggregates test results. It's the required check for branch protection.
   # https://github.com/marketplace/actions/alls-green#why
   # https://github.com/orgs/community/discussions/33579
@@ -172,7 +184,7 @@ jobs:
     name: Unit tests successful
     runs-on: ubuntu-24.04
     if: always()
-    needs: [run-tests]
+    needs: [run-tests, verify-suite-coverage]
     steps:
       - name: Decide whether the needed jobs succeeded or failed
         # uses: re-actors/alls-green@v1.2.1
