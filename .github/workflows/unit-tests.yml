@@ -18,57 +18,35 @@ concurrency:
 
 jobs:
   run-tests:
-    name: ${{ matrix.shard_name }}(py=${{ matrix.python-version }},dj=${{ matrix.django-version }},mongo=${{ matrix.mongo-version }})
+    name: ${{ matrix.suite }}-${{ matrix.group }}(py=${{ matrix.python-version }},dj=${{ matrix.django-version }},mongo=${{ matrix.mongo-version }})
     runs-on: ${{ matrix.os-version }}
     strategy:
-      # One shard failing shouldn't cancel the other nine. At ~20 min a run,
+      # One shard failing shouldn't cancel the other nine. At ~10 min a run,
       # seeing every failing shard at once is worth more than the runner
       # minutes saved by bailing early.
       fail-fast: false
       matrix:
-        python-version:
-          - "3.12"
-        django-version:
-          - "pinned"
-        shard_name:
-          - "lms-1"
-          - "lms-2"
-          - "lms-3"
-          - "lms-4"
-          - "lms-5"
-          - "shared-with-lms-1"
-          - "shared-with-lms-2"
-          # Note: The shared-with-cms-1 shard is currently a subset of both
-          # shared-with-lms-1 and shared-with-lms-2. Some shared tests are
-          # not run -with-cms at all.
-          # https://github.com/openedx/openedx-platform/issues/38355
-          - "shared-with-cms-1"
-          - "cms-1"
-          - "cms-2"
-        mongo-version:
-          - "7.0"
-        os-version:
-          - ubuntu-24.04
-
-        # It's useful to run some subset of the tests on the older version of Ubuntu
-        # so that we don't spend too many resources on this but can find major issues quickly
-        # while we're in a situation where we support two versions.  This section may be commented
-        # out when not in use to easily add/drop future support for any given major dependency.
-        #
-        # We're testing the older version of Ubuntu and running the xmodule tests since those rely on many
-        # dependent complex libraries and will hopefully catch most issues quickly.
-        #
-        # include:
-        #  - shard_name: "xmodule-with-cms"
-        #    python-version: "3.12"
-        #    django-version: "pinned"
-        #    mongo-version: "7.0"
-        #    os-version: "ubuntu-24.04"
-        #  - shard_name: "xmodule-with-lms"
-        #    python-version: "3.12"
-        #    django-version: "pinned"
-        #    mongo-version: "7.0"
-        #    os-version: "ubuntu-24.04"
+        python-version: ["3.12"]
+        django-version: ["pinned"]
+        mongo-version: ["7.0"]
+        os-version: [ubuntu-24.04]
+        # Work is divided by measured test duration (pytest-split), not by
+        # hand-listing directories, so these are just group numbers. The two
+        # suites exist because their tests need different Django settings and
+        # therefore cannot share a process; within a suite the split is even.
+        # Group counts are proportional to measured work: the lms suite is
+        # ~56 machine-minutes, the cms suite ~20.
+        include:
+          - { suite: lms, group: 1 }
+          - { suite: lms, group: 2 }
+          - { suite: lms, group: 3 }
+          - { suite: lms, group: 4 }
+          - { suite: lms, group: 5 }
+          - { suite: lms, group: 6 }
+          - { suite: lms, group: 7 }
+          - { suite: cms, group: 1 }
+          - { suite: cms, group: 2 }
+          - { suite: cms, group: 3 }
     steps:
       - name: checkout repo
         uses: actions/checkout@v7
@@ -108,17 +86,15 @@ jobs:
         run: |
           uv tree
 
-      - name: set settings path
+      - name: resolve suite configuration
         shell: bash
         run: |
-          echo "settings_path=$(uv run python scripts/unit_test_shards_parser.py --shard-name=${{ matrix.shard_name }} --output settings )" >> $GITHUB_ENV
-
-      - name: get unit tests for shard
-        shell: bash
-        run: |
-          echo "unit_test_paths=$(uv run python scripts/unit_test_shards_parser.py --shard-name=${{ matrix.shard_name }} )" >> $GITHUB_ENV
+          P=scripts/unit_test_suites_parser.py
+          echo "settings_path=$(uv run python $P --suite-name=${{ matrix.suite }} --output settings)" >> $GITHUB_ENV
+          echo "unit_test_paths=$(uv run python $P --suite-name=${{ matrix.suite }} --output paths)" >> $GITHUB_ENV
+          echo "splits=$(uv run python $P --suite-name=${{ matrix.suite }} --output splits)" >> $GITHUB_ENV
           if [[ "${{ github.ref }}" == "refs/heads/master" ]]; then
-            echo "report_log_arg=--report-log=reports/pytest-report-${{ matrix.shard_name }}.jsonl" >> $GITHUB_ENV
+            echo "report_log_arg=--report-log=reports/pytest-report-${{ matrix.suite }}-${{ matrix.group }}.jsonl" >> $GITHUB_ENV
           else
             echo "report_log_arg=" >> $GITHUB_ENV
           fi
@@ -134,21 +110,22 @@ jobs:
         run: |
           # --cov-report="" suppresses the per-shard terminal coverage table
           # (~3.7k lines of noise). The .coverage data file is still written and
-          # uploaded as an artifact for the combined `coverage` job below, which
-          # is what reports to codecov.
+          # uploaded as an artifact for the combined `coverage` job below.
           #
-          # -n logical spreads the shard across every vCPU on the runner; without
-          # it pytest used a single core and left ~75% of the runner idle.
+          # -n logical spreads this group across every vCPU on the runner.
+          # --dist loadfile groups by module: ModuleStoreIsolationMixin keeps
+          # process-global stacks that require strict LIFO unwinding, and
+          # splitting a module's classes across workers breaks that.
           #
-          # --dist loadfile groups by module, not by class. ModuleStoreIsolationMixin
-          # keeps process-global stacks (__old_modulestores, __old_contentstores,
-          # __settings_overrides) on top of Django's override_settings stack, and both
-          # SharedModuleStoreTestCase.setUpClass and ModuleStoreTestCase.setUp push onto
-          # them, so unwinding has to stay strictly LIFO. Splitting a module's classes
-          # across workers (loadscope) produced interleavings that broke that nesting
-          # and left settings restored to the wrong object. Keeping whole files together
-          # preserves the within-file ordering the stacks rely on.
+          # --splits/--group take this runner's share of the suite, chosen by
+          # measured duration rather than by directory. The durations file is
+          # per-suite because ~8k shared tests run under both settings with the
+          # same node id, and merging them would double their recorded cost.
+          # Tests missing from the file are assumed to be of average length, so a
+          # stale file degrades balance but never correctness.
           uv run python -Wd -m pytest -p no:randomly -n logical --dist loadfile \
+            --splits ${{ env.splits }} --group ${{ matrix.group }} \
+            --durations-path .test_durations.${{ matrix.suite }} --splitting-algorithm least_duration \
             --ds=${{ env.settings_path }} ${{ env.unit_test_paths }} \
             --cov=. --cov-report="" ${{ env.report_log_arg }}
 
@@ -156,8 +133,8 @@ jobs:
         if: github.ref == 'refs/heads/master'
         uses: actions/upload-artifact@v7
         with:
-          name: pytest-report-${{ matrix.shard_name }}-${{ matrix.python-version }}-${{ matrix.django-version }}-${{ matrix.mongo-version }}-${{ matrix.os-version }}
-          path: reports/pytest-report-${{ matrix.shard_name }}.jsonl
+          name: pytest-report-${{ matrix.suite }}-${{ matrix.group }}-${{ matrix.python-version }}-${{ matrix.django-version }}-${{ matrix.mongo-version }}-${{ matrix.os-version }}
+          path: reports/pytest-report-${{ matrix.suite }}-${{ matrix.group }}.jsonl
           overwrite: true
 
       - name: rename warnings json file
@@ -165,88 +142,27 @@ jobs:
         shell: bash
         run: |
           cd test_root/log
-          mv pytest_warnings.json pytest_warnings_${{ matrix.shard_name }}_${{ matrix.python-version }}_${{ matrix.django-version }}_${{ matrix.mongo-version }}_${{ matrix.os-version }}.json
+          mv pytest_warnings.json pytest_warnings_${{ matrix.suite }}-${{ matrix.group }}_${{ matrix.python-version }}_${{ matrix.django-version }}_${{ matrix.mongo-version }}_${{ matrix.os-version }}.json
 
       - name: save pytest warnings json file
         if: success()
         uses: actions/upload-artifact@v7
         with:
-          name: pytest-warnings-json-${{ matrix.shard_name }}-${{ matrix.python-version }}-${{ matrix.django-version }}-${{ matrix.mongo-version }}-${{ matrix.os-version }}
+          name: pytest-warnings-json-${{ matrix.suite }}-${{ matrix.group }}-${{ matrix.python-version }}-${{ matrix.django-version }}-${{ matrix.mongo-version }}-${{ matrix.os-version }}
           path: |
             test_root/log/pytest_warnings*.json
           overwrite: true
 
       - name: Renaming coverage data file
         run: |
-          mv reports/.coverage reports/${{ matrix.shard_name }}_${{ matrix.python-version }}_${{ matrix.django-version }}_${{ matrix.mongo-version }}_${{ matrix.os-version }}.coverage
+          mv reports/.coverage reports/${{ matrix.suite }}-${{ matrix.group }}_${{ matrix.python-version }}_${{ matrix.django-version }}_${{ matrix.mongo-version }}_${{ matrix.os-version }}.coverage
 
       - name: Upload coverage
         uses: actions/upload-artifact@v7
         with:
-          name: coverage-${{ matrix.shard_name }}-${{ matrix.python-version }}-${{ matrix.django-version }}-${{ matrix.mongo-version }}-${{ matrix.os-version }}
-          path: reports/${{ matrix.shard_name }}_${{ matrix.python-version }}_${{ matrix.django-version }}_${{ matrix.mongo-version }}_${{ matrix.os-version }}.coverage
+          name: coverage-${{ matrix.suite }}-${{ matrix.group }}-${{ matrix.python-version }}-${{ matrix.django-version }}-${{ matrix.mongo-version }}-${{ matrix.os-version }}
+          path: reports/${{ matrix.suite }}-${{ matrix.group }}_${{ matrix.python-version }}_${{ matrix.django-version }}_${{ matrix.mongo-version }}_${{ matrix.os-version }}.coverage
           overwrite: true
-
-  collect-and-verify:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v7
-
-      - name: install system requirements
-        run: |
-          sudo apt-get update && sudo apt-get install libxmlsec1-dev
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
-        with:
-          enable-cache: true
-          python-version: "3.12"
-
-      - name: install requirements
-        run: make test-requirements
-
-      - name: collect tests from all modules
-        shell: bash
-        run: |
-          echo "root_cms_unit_tests_count=$(uv run pytest --disable-warnings --collect-only --ds=cms.envs.test cms/ -q | head -n -2 | wc -l)" >> $GITHUB_ENV
-          echo "root_lms_unit_tests_count=$(uv run pytest --disable-warnings --collect-only --ds=lms.envs.test lms/ openedx/ common/djangoapps/ xmodule/ -q | head -n -2 | wc -l)" >> $GITHUB_ENV
-
-      - name: get GHA unit test paths
-        shell: bash
-        run: |
-          echo "cms_unit_test_paths=$(uv run python scripts/gha_unit_tests_collector.py --cms-only)" >> $GITHUB_ENV
-          echo "lms_unit_test_paths=$(uv run python scripts/gha_unit_tests_collector.py --lms-only)" >> $GITHUB_ENV
-
-      - name: collect tests from GHA unit test shards
-        shell: bash
-        run: |
-          echo "cms_unit_tests_count=$(uv run pytest --disable-warnings --collect-only --ds=cms.envs.test ${{ env.cms_unit_test_paths }} -q | head -n -2 | wc -l)" >> $GITHUB_ENV
-          echo "lms_unit_tests_count=$(uv run pytest --disable-warnings --collect-only --ds=lms.envs.test ${{ env.lms_unit_test_paths }} -q | head -n -2 | wc -l)" >> $GITHUB_ENV
-
-      - name: add unit tests count
-        shell: bash
-        run: |
-          echo "root_all_unit_tests_count=$((${{ env.root_cms_unit_tests_count }}+${{ env.root_lms_unit_tests_count }}))" >> $GITHUB_ENV
-          echo "shards_all_unit_tests_count=$((${{ env.cms_unit_tests_count }}+${{ env.lms_unit_tests_count }}))" >> $GITHUB_ENV
-
-      - name: print unit tests count
-        shell: bash
-        run: |
-          echo CMS unit tests from root: ${{ env.root_cms_unit_tests_count }}
-          echo LMS unit tests from root: ${{ env.root_lms_unit_tests_count }}
-          echo CMS unit tests from shards: ${{ env.cms_unit_tests_count }}
-          echo LMS unit tests from shards: ${{ env.lms_unit_tests_count }}
-          echo All root unit tests count: ${{ env.root_all_unit_tests_count }}
-          echo All shards unit tests count: ${{ env.shards_all_unit_tests_count }}
-
-      - name: fail the check
-        shell: bash
-        if: ${{ env.root_all_unit_tests_count != env.shards_all_unit_tests_count }}
-        run: |
-          echo "::error title='Unit test modules in unit-test-shards.json (unit-tests.yml workflow) are outdated'::unit tests running in unit-tests
-          workflow don't match the count for unit tests for entire openedx-platform suite, please update the unit-test-shards.json under .github/workflows
-          to add any missing apps and match the count. for more details please take a look at scripts/gha-shards-readme.md"
-          exit 1
 
   # This job aggregates test results. It's the required check for branch protection.
   # https://github.com/marketplace/actions/alls-green#why
