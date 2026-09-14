@@ -53,7 +53,13 @@ if TYPE_CHECKING:
 class TaxonomyOrgView(TaxonomyView):
     """
     View to list, create, retrieve, update, delete, export or import Taxonomies.
-    This view extends the TaxonomyView to add Organization filters.
+
+    This view extends TaxonomyView in two ways: it adds Organization filters, and it owns the
+    choice of which kind of Taxonomy to create. perform_create() and the import path both
+    dispatch on the request's taxonomy_type -- "competency" creates a CompetencyTaxonomy
+    alongside the base Taxonomy, anything else creates a plain one -- since this is the layer
+    that can see both the tagging and competency-taxonomy domains, which TaxonomyView itself
+    cannot.
 
     Refer to TaxonomyView docstring for usage details.
 
