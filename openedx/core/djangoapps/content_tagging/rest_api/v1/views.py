@@ -206,10 +206,6 @@ class ObjectTagOrgView(ObjectTagView):
         Cache the authz toggle + key-parsing result for the current object_id.
 
         Safe to cache per-instance because DRF creates a new view instance per request.
-
-        Kept: ensure_has_view_object_tag_permission below and
-        ObjectTagTaxonomyOrgFilterBackend.filter_queryset (filters.py) still read this
-        directly.
         """
         object_id = self.kwargs.get('object_id')
         if object_id:
