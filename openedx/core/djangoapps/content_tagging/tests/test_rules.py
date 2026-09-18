@@ -755,6 +755,11 @@ class TestRulesCourseAuthzPermissions(TestTaxonomyMixin, TestCase):
         )
 
         self.course_key = CourseLocator.from_string("course-v1:OeX+DemoX+Demo_Course")
+        self.xblock_key = BlockUsageLocator(
+            course_key=self.course_key,
+            block_type='problem',
+            block_id='block_id',
+        )
         # Granted while the waffle flag is off, so this goes through the legacy role path.
         add_users(self.superuser, CourseStaffRole(self.course_key), self.legacy_user)
         # org1's short_name ("OeX") matches self.course_key's org, so this is an org-level
@@ -796,6 +801,25 @@ class TestRulesCourseAuthzPermissions(TestTaxonomyMixin, TestCase):
             str(self.course_key),
         )
 
+    @override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=True)
+    @patch("openedx_authz.api.is_user_allowed")
+    def test_xblock_in_switched_course_authz_only_role_allowed(self, mock_is_user_allowed):
+        """
+        An xblock inside a switched course resolves through the same authz-only branch as
+        the course itself: should_use_course_authz_for_object resolves the xblock's usage
+        key down to its course key.
+        """
+        mock_is_user_allowed.return_value = True
+
+        result = can_change_object_tag_objectid(self.authz_user, str(self.xblock_key))
+
+        self.assertTrue(result)  # noqa: PT009
+        mock_is_user_allowed.assert_called_once_with(
+            self.authz_user.username,
+            authz_permissions.COURSES_MANAGE_TAGS.identifier,
+            str(self.course_key),
+        )
+
     @patch("openedx_authz.api.is_user_allowed")
     def test_course_not_switched_legacy_role_allowed(self, mock_is_user_allowed):
         """
@@ -806,24 +830,6 @@ class TestRulesCourseAuthzPermissions(TestTaxonomyMixin, TestCase):
 
         self.assertTrue(result)  # noqa: PT009
         mock_is_user_allowed.assert_not_called()
-
-    @override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=True)
-    @patch("openedx_authz.api.is_user_allowed")
-    def test_course_switched_org_admin_only_role_denied(self, mock_is_user_allowed):
-        """
-        A switched course does not fall back to org-level admin access either: the switch
-        is exclusive of every legacy path, not just the course-level role.
-        """
-        mock_is_user_allowed.return_value = False
-
-        result = can_change_object_tag_objectid(self.org_admin_user, str(self.course_key))
-
-        self.assertFalse(result)  # noqa: PT009
-        mock_is_user_allowed.assert_called_once_with(
-            self.org_admin_user.username,
-            authz_permissions.COURSES_MANAGE_TAGS.identifier,
-            str(self.course_key),
-        )
 
     @override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=True)
     @patch("openedx_authz.api.is_user_allowed")

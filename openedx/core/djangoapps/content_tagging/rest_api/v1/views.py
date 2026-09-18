@@ -207,11 +207,9 @@ class ObjectTagOrgView(ObjectTagView):
 
         Safe to cache per-instance because DRF creates a new view instance per request.
 
-        Kept (unlike the now-deleted ensure_user_has_can_tag_object_permissions override)
-        because ensure_has_view_object_tag_permission below and
-        ObjectTagTaxonomyOrgFilterBackend.filter_queryset (filters.py) both still read it
-        directly; can_change_object_tag_objectid's own authz branch only made the tagging
-        permission override redundant, not this.
+        Kept: ensure_has_view_object_tag_permission below and
+        ObjectTagTaxonomyOrgFilterBackend.filter_queryset (filters.py) still read this
+        directly.
         """
         object_id = self.kwargs.get('object_id')
         if object_id:
